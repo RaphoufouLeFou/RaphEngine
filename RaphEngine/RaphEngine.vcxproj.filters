@@ -51,6 +51,12 @@
     <ClInclude Include="include\Inputs.h">
       <Filter>Fichiers d%27en-tête\include</Filter>
     </ClInclude>
+    <ClInclude Include="include\Text.h">
+      <Filter>Fichiers d%27en-tête\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Images.h">
+      <Filter>Fichiers d%27en-tête\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RaphEngine.cpp">
@@ -91,10 +97,16 @@
     <None Include="shader\fragmentShader.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="imagesFS.glsl">
+    <None Include="shader\text.vs">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="imagesVS.glsl">
+    <None Include="shader\imagesFS.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\imagesVS.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\text.fs">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

@@ -8,15 +8,12 @@ public:
 	static const int* ResX;
 	static const int* ResY;
 	static void Init(bool fullScreen);
-	static bool IsKeyPressed(int key);
+	static bool IsKeyPressed(KeyCode key);
+	static void StartFrameRender();
 	static bool RenderFrame();
 	static void UpdateLogoGL(const char* newLogoPath);
 };
 
-class UI {
-public:
-	static void RenderImage(Shader& shader, GLuint Texture, int x, int y, int sizeX, int sizeY, int zIndex);
-};
 
 struct Character {
 	unsigned int TextureID; // ID handle of the glyph texture
@@ -25,9 +22,3 @@ struct Character {
 	unsigned int Advance;   // Horizontal offset to advance to next glyph
 };
 
-
-class Text {
-public:
-	static void InitTextRendering();
-	static void RenderText(std::string text, float x, float y, float scale, glm::vec3 color);
-};

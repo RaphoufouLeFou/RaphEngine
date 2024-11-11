@@ -11,6 +11,12 @@
 const char * RaphEngine::windowTitle = "RaphEngine";
 Camera* RaphEngine::camera = new Camera();
 
+float Time::deltaTime = 0.0f;
+
+long Time::GetTime() {
+	return SDL_GetTicks();
+}
+
 void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
 	{
@@ -38,20 +44,20 @@ void MainLoop() {
 	// Main loop
 	while (true) {
 		// Handle events
+
+		long start = Time::GetTime();
+		Renderer::StartFrameRender();
+		ExecuteUpdates();
 		bool shouldNotClose = Renderer::RenderFrame();
 		if (!shouldNotClose) {
 			Close();
 			break;
 		}
-		ExecuteUpdates();
+		Time::deltaTime = (float)(Time::GetTime() - start) / 1000.0f;
 	}
 }
 
 void RaphEngine::Init(const char* windowTitle) {
-
-	for (int i = 0; i < 322; i++) { // init them all to false
-		Key::KEYS[i] = false;
-	}
 	RaphEngine::windowTitle = windowTitle;
 	SDL_Init(SDL_INIT_EVERYTHING);
 	Renderer::Init(false);
@@ -60,6 +66,11 @@ void RaphEngine::Init(const char* windowTitle) {
 
 void RaphEngine::Run() {
 	MainLoop();
+}
+
+void RaphEngine::GetWindowSize(int* x, int* y) {
+	*x = *Renderer::ResX;
+	*y = *Renderer::ResY;
 }
 
 void RaphEngine::UpdateLogo(const char* newLogoPath) {

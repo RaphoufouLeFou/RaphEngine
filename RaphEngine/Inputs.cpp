@@ -3,9 +3,7 @@
 #include "include/Renderer.h"
 #include "SDL.h"
 
-bool Key::KEYS[322] = { false };
-
-bool Inputs::IsKeyPressed(Key::KeyCode key) {
+bool Inputs::IsKeyPressed(KeyCode key) {
 	bool isPressed = Renderer::IsKeyPressed(key);
 	return isPressed;
 }

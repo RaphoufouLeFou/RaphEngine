@@ -18,7 +18,6 @@ uniform vec3 lightPos;
 uniform bool isTerrain;
 
 void main() {
-	
 	if (isTerrain) {
 		vec3 lightColor = vec3(1, 1, 1);
 		vec3 norm = normalize(Normal);

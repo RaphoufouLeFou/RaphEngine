@@ -10,7 +10,15 @@
 #include "Vector.h"
 #include "GameObject.h"
 #include "ObjLoader.h"
+#include "Text.h"
+#include "Images.h"
 #include "Inputs.h"
+
+class RAPHENGINE_API Time {
+public:
+	static float deltaTime;
+	static long GetTime();
+};
 
 class RaphEngine
 {
@@ -19,6 +27,7 @@ public:
 	static const char* windowTitle;
 	static RAPHENGINE_API void Init(const char* windowTitle);
 	static RAPHENGINE_API void Run();
+	static RAPHENGINE_API void GetWindowSize(int* x, int* y);
 
 	static std::vector<void (*)()> Starts;
 	static std::vector<void (*)()> Updates;

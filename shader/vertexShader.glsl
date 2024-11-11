@@ -15,21 +15,12 @@ uniform mat4 MVP;
 uniform vec3 PlayerPosition;
 uniform vec3 lightPos;
 uniform vec3 ObjectPosition;
-uniform vec3 ObjectRotation;
+uniform mat3 ObjectRotation;
 uniform vec3 ObjectScale;
 uniform bool isTerrain;
 
-float DEG2RAD(float deg) {
-	return deg * 3.14159265358979323846 / 180.0;
-}
-
-vec3 Rotate(vec3 v, vec3 r) {
-	vec3 res = vec3(
-
-		v.x * cos(DEG2RAD(r.y)) - v.z * sin(DEG2RAD(r.y)),
-		v.y,
-		v.x * sin(DEG2RAD(r.y)) + v.z * cos(DEG2RAD(r.y))
-	);
+vec3 Rotate(vec3 v) {
+	vec3 res = ObjectRotation * v;
 	return res;
 }
 
@@ -39,7 +30,7 @@ vec3 scale(vec3 v, vec3 s) {
 
 void main() {
 
-	vec3 vertexPosition = Rotate(vertexRelativePosition, ObjectRotation);
+	vec3 vertexPosition = Rotate(vertexRelativePosition);
 	vertexPosition = scale(vertexPosition, ObjectScale);
 	if (!isTerrain) {
 		vertexPosition += ObjectPosition;
@@ -52,7 +43,7 @@ void main() {
 	FragPos = vec3(modelView * vec4(vertexPosition, 1.0));
 	UV = vertexUV;
 	if (!isTerrain) {
-		Normal = Rotate(vertexNormal, ObjectRotation);
+		Normal = Rotate(vertexNormal);
 	}
 	else {
 		Normal = vertexNormal;

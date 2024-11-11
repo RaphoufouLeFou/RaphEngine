@@ -2,6 +2,8 @@
 #include "include/Renderer.h"
 #include "include/RaphEngine.h"
 #include "include/ImageLoader.h"
+#include "include/Text.h"
+#include "include/Images.h"
 #include <iostream>
 
 
@@ -162,7 +164,13 @@ std::vector<glm::vec2> Vector2ToVec2(std::vector<Vector2> vec) {
 	return result;
 }
 
-void UI::RenderImage(Shader& shader, GLuint Texture, int x, int y, int sizeX, int sizeY, int zIndex) {
+Shader* ImageShader;
+
+void Image::InitImageRendering() {
+	ImageShader = new Shader("shader/imagesVS.glsl", "shader/imagesFS.glsl");
+}
+
+void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) {
 
 	float relativeX = (float)x / *Renderer::ResX;
 	float relativeY = (float)y / *Renderer::ResY;
@@ -179,8 +187,16 @@ void UI::RenderImage(Shader& shader, GLuint Texture, int x, int y, int sizeX, in
 		relativeX + relativeSizeX, relativeY + relativeSizeY, zIndex, 11  // right
 	};
 
+	static std::map<std::string, GLuint> Textures;
+
+	if (Textures.find(path) == Textures.end()) {
+		GLuint Texture = ImageLoader::LoadImageGL(path.c_str(), false);
+		Textures.insert(std::pair<std::string, GLuint>(path, Texture));
+	}
+
+	GLuint Texture = Textures[path];
 	glBindTexture(GL_TEXTURE_2D, Texture);
-	shader.setInt("TextureSampler", 0);
+	ImageShader->setInt("TextureSampler", 0);
 
 	unsigned int VBO, VAO;
 
@@ -198,13 +214,13 @@ void UI::RenderImage(Shader& shader, GLuint Texture, int x, int y, int sizeX, in
 
 	glBindVertexArray(0);
 
-	glUseProgram(shader.ID);
+	glUseProgram(ImageShader->ID);
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shader.ID);
+	glDeleteProgram(ImageShader->ID);
 	glDeleteTextures(1, &Texture);
 
 }
@@ -273,7 +289,14 @@ void RenderGameObject(GameObject * go) {
 
 	go->mesh->shader->setVec3("lightPos", lightPos);
 	go->mesh->shader->setVec3("ObjectPosition", go->transform->position);
-	go->mesh->shader->setVec3("ObjectRotation", go->transform->rotation);
+	printf("ObjectRotation %s : %f %f %f\n", go->name, go->transform->rotation.x, go->transform->rotation.y, go->transform->rotation.z);
+
+	glm::mat3 rotation = glm::mat3(1.0);
+	rotation[0] = glm::vec3(cos((go->transform->rotation.y)), 0, sin((go->transform->rotation.y)));
+	rotation[1] = glm::vec3(0, 1, 0);
+	rotation[2] = glm::vec3(-sin((go->transform->rotation.y)), 0, cos((go->transform->rotation.y)));
+	
+	go->mesh->shader->setMat3("ObjectRotation", rotation);
 	go->mesh->shader->setVec3("ObjectScale", go->transform->scale);
 	go->mesh->shader->setBool("isTerrain", false);
 
@@ -300,8 +323,8 @@ void RenderObjects() {
 	}
 }
 
-bool Renderer::IsKeyPressed(int key) {
-	return glfwGetKey(window, key) == GLFW_PRESS;
+bool Renderer::IsKeyPressed(KeyCode key) {
+	return glfwGetKey(window, (int)key) == GLFW_PRESS;
 }
 
 std::map<GLchar, Character> Characters;
@@ -401,7 +424,7 @@ void Text::InitTextRendering() {
 
 }
 
-void Text::RenderText(std::string text, float x, float y, float scale, glm::vec3 color)
+void Text::RenderText(std::string text, float x, float y, float scale, Vector3 color)
 {
 	GLuint VertexArrayID;
 	glEnable(GL_BLEND);
@@ -467,18 +490,15 @@ void Text::RenderText(std::string text, float x, float y, float scale, glm::vec3
 
 }
 
+void Renderer::StartFrameRender() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	RenderObjects();
+}
+
 bool Renderer::RenderFrame() {
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//Shader shader = Shader("shader/imagesVS.glsl", "shader/imagesFS.glsl");
-	//GLuint Texture = ImageLoader::LoadImageGL("Textures/Logo.bmp");
-	//UI::RenderImage(shader, Texture, -*ResX, -*ResY, 2 ** ResX, 2 ** ResY, 0);
-
-	RenderObjects();
-
 	// text rendering
-	Text::RenderText("alpha dev build : vA0.000.1", 2, 2, 0.4f, glm::vec3(0, 0, 0));
+	Text::RenderText("alpha dev build : vA0.000.2", 2, 2, 0.4f, Vector3(0, 0, 0));
 
 	glfwSwapBuffers(window);
 

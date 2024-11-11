@@ -151,11 +151,13 @@ xcopy /y /d  "$(ProjectDir)\shader" "$(ProjectDir)..\shader"</Command>
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\GameObject.h" />
     <ClInclude Include="include\ImageLoader.h" />
+    <ClInclude Include="include\Images.h" />
     <ClInclude Include="include\Inputs.h" />
     <ClInclude Include="include\ObjLoader.h" />
     <ClInclude Include="include\RaphEngine.h" />
     <ClInclude Include="include\Renderer.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\Text.h" />
     <ClInclude Include="include\Vector.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -177,9 +179,11 @@ xcopy /y /d  "$(ProjectDir)\shader" "$(ProjectDir)..\shader"</Command>
     <ClCompile Include="Vector.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="imagesFS.glsl" />
-    <None Include="imagesVS.glsl" />
     <None Include="shader\fragmentShader.glsl" />
+    <None Include="shader\imagesFS.glsl" />
+    <None Include="shader\imagesVS.glsl" />
+    <None Include="shader\text.fs" />
+    <None Include="shader\text.vs" />
     <None Include="shader\vertexShader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
