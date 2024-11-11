@@ -108,16 +108,25 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;RAPHENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;RAPHENGINE_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>F:\Documents\Libraries\steam\lib\win64;F:\Documents\Libraries\freetype-2.13.2\objs\x64\Debug;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;F:\Documents\Libraries\SDL2\lib\x64;F:\Documents\Libraries\glew-2.1.0\lib\Release\x64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;kernel32.lib;user32.lib;glew32.lib;freetype.lib;SDL2.lib;SDL2main.lib;Shell32.lib;steam_api64.lib;SDL2_image.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y /d  "$(OutDir)RaphEngine.dll" "$(ProjectDir)..\libs\"
+xcopy /y /d  "$(OutDir)RaphEngine.lib" "$(ProjectDir)..\libs\"
+xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"
+xcopy /y /d  "$(ProjectDir)\shader" "$(ProjectDir)..\shader"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -140,11 +149,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="include\GameObject.h" />
+    <ClInclude Include="include\ImageLoader.h" />
+    <ClInclude Include="include\Inputs.h" />
+    <ClInclude Include="include\ObjLoader.h" />
+    <ClInclude Include="include\RaphEngine.h" />
+    <ClInclude Include="include\Renderer.h" />
+    <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\Vector.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="RaphEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="ImageLoader.cpp" />
+    <ClCompile Include="Inputs.cpp" />
+    <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -152,6 +172,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RaphEngine.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Vector.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="imagesFS.glsl" />
+    <None Include="imagesVS.glsl" />
+    <None Include="shader\fragmentShader.glsl" />
+    <None Include="shader\vertexShader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
