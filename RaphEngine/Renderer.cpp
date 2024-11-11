@@ -146,6 +146,11 @@ void Renderer::Init(bool fullScreen) {
 
 	glEnable(GL_DEBUG_OUTPUT);
 	Text::InitTextRendering();
+	glfwSwapInterval(0);
+}
+
+double Time::GetTime() {
+	return glfwGetTime() * 1000;
 }
 
 std::vector<glm::vec3> Vector3ToVec3(std::vector<Vector3> vec) {
@@ -289,7 +294,6 @@ void RenderGameObject(GameObject * go) {
 
 	go->mesh->shader->setVec3("lightPos", lightPos);
 	go->mesh->shader->setVec3("ObjectPosition", go->transform->position);
-	printf("ObjectRotation %s : %f %f %f\n", go->name, go->transform->rotation.x, go->transform->rotation.y, go->transform->rotation.z);
 
 	glm::mat3 rotation = glm::mat3(1.0);
 	rotation[0] = glm::vec3(cos((go->transform->rotation.y)), 0, sin((go->transform->rotation.y)));

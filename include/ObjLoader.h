@@ -10,7 +10,7 @@
 #include "Vector.h"
 #include "GameObject.h"
 
-static class RAPHENGINE_API OBJLoader
+class RAPHENGINE_API OBJLoader
 {
 public:
 	static bool loadOBJ(

@@ -11,11 +11,7 @@
 const char * RaphEngine::windowTitle = "RaphEngine";
 Camera* RaphEngine::camera = new Camera();
 
-float Time::deltaTime = 0.0f;
-
-long Time::GetTime() {
-	return SDL_GetTicks();
-}
+double Time::deltaTime = 0.0f;
 
 void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
@@ -45,7 +41,7 @@ void MainLoop() {
 	while (true) {
 		// Handle events
 
-		long start = Time::GetTime();
+		double start = Time::GetTime();
 		Renderer::StartFrameRender();
 		ExecuteUpdates();
 		bool shouldNotClose = Renderer::RenderFrame();
@@ -53,7 +49,7 @@ void MainLoop() {
 			Close();
 			break;
 		}
-		Time::deltaTime = (float)(Time::GetTime() - start) / 1000.0f;
+		Time::deltaTime = (Time::GetTime() - start) / 1000.0;
 	}
 }
 

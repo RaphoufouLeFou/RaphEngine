@@ -14,10 +14,12 @@
 #include "Images.h"
 #include "Inputs.h"
 
+typedef char byte;
+
 class RAPHENGINE_API Time {
 public:
-	static float deltaTime;
-	static long GetTime();
+	static double deltaTime;
+	static double GetTime();
 };
 
 class RaphEngine
