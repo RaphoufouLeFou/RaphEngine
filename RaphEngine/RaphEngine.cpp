@@ -16,12 +16,9 @@ double Time::deltaTime = 0.0f;
 void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
 	{
-		std::cout << "Initing " << GameObject::SpawnedGameObjects[i] << std::endl;
 		GameObject* go = GameObject::SpawnedGameObjects[i];
 		go->Init();
-		std::cout << "shader is null on " << go->name << " 2 ? : " << (go->mesh->shader == nullptr) << std::endl;
 		go->Start();
-		std::cout << "shader is null on " << go->name << " 3 ? : " << (go->mesh->shader == nullptr) << std::endl;
 
 	}
 }

@@ -13,7 +13,6 @@ out float distToCamera;
 
 uniform mat4 MVP;
 uniform vec3 PlayerPosition;
-uniform vec3 lightPos;
 uniform vec3 ObjectPosition;
 uniform mat3 ObjectRotation;
 uniform vec3 ObjectScale;
@@ -32,9 +31,8 @@ void main() {
 
 	vec3 vertexPosition = Rotate(vertexRelativePosition);
 	vertexPosition = scale(vertexPosition, ObjectScale);
-	if (!isTerrain) {
-		vertexPosition += ObjectPosition;
-	}
+	vertexPosition += ObjectPosition;
+
 
 	gl_Position = MVP * vec4(vertexPosition, 1);
 	vec3 vposition = vertexPosition.xyz;
@@ -42,10 +40,6 @@ void main() {
 	mat4 modelView = mat4(1.0);
 	FragPos = vec3(modelView * vec4(vertexPosition, 1.0));
 	UV = vertexUV;
-	if (!isTerrain) {
-		Normal = Rotate(vertexNormal);
-	}
-	else {
-		Normal = vertexNormal;
-	}
+	Normal = Rotate(vertexNormal);
+	
 }

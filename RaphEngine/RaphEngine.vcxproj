@@ -138,6 +138,7 @@ xcopy /y /d  "$(ProjectDir)\shader" "$(ProjectDir)..\shader"</Command>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,6 +146,8 @@ xcopy /y /d  "$(ProjectDir)\shader" "$(ProjectDir)..\shader"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>F:\Documents\Libraries\steam\lib\win64;F:\Documents\Libraries\freetype-2.13.2\objs\x64\Debug;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;F:\Documents\Libraries\SDL2\lib\x64;F:\Documents\Libraries\glew-2.1.0\lib\Release\x64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;kernel32.lib;user32.lib;glew32.lib;freetype.lib;SDL2.lib;SDL2main.lib;Shell32.lib;steam_api64.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

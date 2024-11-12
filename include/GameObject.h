@@ -43,9 +43,10 @@ public:
 
 class RAPHENGINE_API Mesh {
 public:
-	std::vector<Vector3> vertices;
-	std::vector<Vector3> normals;
-	std::vector<Vector2> uvs;
+	Vector3 *vertices;
+	Vector3 *normals;
+	Vector2 *uvs;
+	int verticesCount;
 
 	const char* texturePath;
 	void LoadTexture(const char* texturePath, bool smooth);
@@ -53,6 +54,13 @@ public:
 #ifdef RAPHENGINE_EXPORTS
 	Shader* shader;
 	GLuint texture;
+	GLuint vao;
+	GLuint uvbuffer;
+	GLuint vertexbuffer;
+	GLuint normalbuffer;
+	bool generatedBuffers;
+
+	void GenerateBuffers();
 #endif
 };
 

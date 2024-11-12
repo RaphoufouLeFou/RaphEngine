@@ -25,6 +25,7 @@
 
 glm::mat4 ViewMatrix = glm::mat4(1.0f);
 glm::mat4 ProjectionMatrix = glm::mat4(1.0f);
+glm::mat4 MVP = glm::mat4(1.0f);
 
 GLFWwindow* window;
 const int* Renderer::ResX;
@@ -86,6 +87,10 @@ void CalculateMat() {
 		Vector3ToVec3(RaphEngine::camera->transform->position) + direction, // and looks here : at the same position, plus "direction"
 		up                  // Head is up (set to 0,-1,0 to look upside-down)
 	);
+
+
+	glm::mat4 ModelMatrix = glm::mat4(1.0);
+	MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 }
 
 void Renderer::Init(bool fullScreen) {
@@ -172,7 +177,7 @@ std::vector<glm::vec2> Vector2ToVec2(std::vector<Vector2> vec) {
 Shader* ImageShader;
 
 void Image::InitImageRendering() {
-	ImageShader = new Shader("shader/imagesVS.glsl", "shader/imagesFS.glsl");
+	ImageShader = new Shader("Assets/Shader/imagesVS.glsl", "Assets/Shader/imagesFS.glsl");
 }
 
 void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) {
@@ -230,22 +235,43 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 
 }
 
+void Mesh::GenerateBuffers() {
+
+	if (generatedBuffers)
+	{
+		glDeleteBuffers(1, &vertexbuffer);
+		glDeleteBuffers(1, &uvbuffer);
+		glDeleteBuffers(1, &normalbuffer);
+		glDeleteVertexArrays(1, &vao);
+	}
+
+	
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glGenBuffers(1, &vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * sizeof(Vector3), vertices, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &uvbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * sizeof(Vector2), uvs, GL_STATIC_DRAW);
+
+	glGenBuffers(1, &normalbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * sizeof(Vector3), normals, GL_STATIC_DRAW);
+
+	generatedBuffers = true;
+}
+
 void RenderGameObject(GameObject * go) {
 	int err = 0;
 
-	if (go->mesh->vertices.size() != go->mesh->uvs.size() || go->mesh->vertices.size() != go->mesh->normals.size()) {
-		std::cerr << "Vertices, UVs and Normals must have the same size" << std::endl;
+	if (go->mesh->verticesCount == 0)
 		return;
-	}
-
-	if (go->mesh->vertices.size() == 0)
-		return;
-
 
 	go->mesh->shader->use();
-
-	glm::mat4 ModelMatrix = glm::mat4(1.0);
-	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
 	go->mesh->shader ->setMat4("MVP", MVP);
 
@@ -254,29 +280,11 @@ void RenderGameObject(GameObject * go) {
 
 	go->mesh->shader->setInt("myTextureSampler", 0);
 
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	GLuint vao = go->mesh->vao;
 
-	GLuint uvbuffer;
-	GLuint vertexbuffer;
-	GLuint normalbuffer;
-
-	std::vector<glm::vec3> indexed_vertices = Vector3ToVec3(go->mesh->vertices);
-	std::vector<glm::vec2> indexed_uvs = Vector2ToVec2(go->mesh->uvs);
-	std::vector<glm::vec3> indexed_normals = Vector3ToVec3(go->mesh->normals);
-
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &uvbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferData(GL_ARRAY_BUFFER, indexed_uvs.size() * sizeof(glm::vec2), &indexed_uvs[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &normalbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-	glBufferData(GL_ARRAY_BUFFER, indexed_normals.size() * sizeof(glm::vec3), &indexed_normals[0], GL_STATIC_DRAW);
+	GLuint uvbuffer = go->mesh->uvbuffer;
+	GLuint vertexbuffer = go->mesh->vertexbuffer;
+	GLuint normalbuffer = go->mesh->normalbuffer;
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -290,9 +298,24 @@ void RenderGameObject(GameObject * go) {
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	Vector3 lightPos(0, 40, 0);
+	int lightCount = 1;
 
-	go->mesh->shader->setVec3("lightPos", lightPos);
+	Vector3 *LightPoses = new Vector3[lightCount];
+	LightPoses[0] = Vector3(1, 1, 1);
+
+	Vector3 *lightColor = new Vector3[lightCount];
+	lightColor[0] = Vector3(1, 1, 1);
+
+	Vector3 *lightSettings = new Vector3[lightCount];
+	lightSettings[0] = Vector3(2, 1, 0);
+	
+
+	go->mesh->shader->setVec3Array("lightColor", lightCount, lightColor);
+	go->mesh->shader->setVec3Array("lightPos", lightCount, LightPoses);
+	go->mesh->shader->setVec3Array("lightSettings", lightCount, lightSettings);
+
+
+	go->mesh->shader->setInt("lightCount", lightCount);
 	go->mesh->shader->setVec3("ObjectPosition", go->transform->position);
 
 	glm::mat3 rotation = glm::mat3(1.0);
@@ -304,19 +327,12 @@ void RenderGameObject(GameObject * go) {
 	go->mesh->shader->setVec3("ObjectScale", go->transform->scale);
 	go->mesh->shader->setBool("isTerrain", false);
 
-	glDrawArrays(GL_TRIANGLES, 0, (int)indexed_vertices.size());
+	glDrawArrays(GL_TRIANGLES, 0, go->mesh->verticesCount);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 
-	glDeleteBuffers(1, &vertexbuffer);
-	glDeleteBuffers(1, &uvbuffer);
-	glDeleteBuffers(1, &normalbuffer);
-
-	indexed_uvs.clear();
-	indexed_vertices.clear();
-	indexed_normals.clear();
 }
 
 void RenderObjects() {
@@ -335,7 +351,7 @@ std::map<GLchar, Character> Characters;
 unsigned int VAO, VBO;
 
 void Text::InitTextRendering() {
-	textShader = new Shader("shader/text.vs", "shader/text.fs");
+	textShader = new Shader("Assets/Shader/text.vs", "Assets/Shader/text.fs");
 	glm::mat4 projection = glm::ortho(0.0f, (float)(*Renderer::ResX), 0.0f, (float)(*Renderer::ResY));
 	textShader->use();
 	glUniformMatrix4fv(glGetUniformLocation(textShader->ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -349,7 +365,7 @@ void Text::InitTextRendering() {
 		return;
 	}
 
-	std::string font_name = "D:/DOCUMENTS/GitHub/GLMC/GLMC/fonts/Pixellari.ttf";
+	std::string font_name = "Assets/Fonts/Pixellari.ttf";
 	if (font_name.empty())
 	{
 		std::cout << "ERROR::FREETYPE: Failed to load font_name" << std::endl;
@@ -428,7 +444,7 @@ void Text::InitTextRendering() {
 
 }
 
-void Text::RenderText(std::string text, float x, float y, float scale, Vector3 color)
+void Text::RenderText(const char* text, float x, float y, float scale, Vector3 color)
 {
 	GLuint VertexArrayID;
 	glEnable(GL_BLEND);
@@ -440,19 +456,19 @@ void Text::RenderText(std::string text, float x, float y, float scale, Vector3 c
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(VAO);
 	// iterate through all characters
-	std::string::const_iterator c;
 
 	float CurrentX = x;
-
-	for (c = text.begin(); c != text.end(); c++)
+	int len = strlen(text);
+	for (int i = 0; i < len; i++)
 	{
-		if (*c == '\n')
+		char c = text[i];
+		if (c == '\n')
 		{
 			y -= 20;
 			CurrentX = x;
 			continue;
 		}
-		Character ch = Characters[*c];
+		Character ch = Characters[c];
 
 		float xpos = CurrentX + ch.Bearing.x * scale;
 		float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;

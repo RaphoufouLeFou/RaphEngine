@@ -3,13 +3,13 @@
 #include "include/ObjLoader.h"
 #include <string>
 
-bool OBJLoader::loadOBJ(
+bool loadOBJVerts(
 	const char* path,
-	std::vector<Vector3>& out_vertices,
-	std::vector<Vector2>& out_uvs,
-	std::vector<Vector3>& out_normals
+	Vector3** out_vertices,
+	Vector2** out_uvs,
+	Vector3** out_normals,
+	int* verticesCount
 ) {
-	printf("Loading OBJ file %s...\n", path);
 
 	std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
 	std::vector<Vector3> temp_vertices;
@@ -76,9 +76,12 @@ bool OBJLoader::loadOBJ(
 		}
 
 	}
-
+	int size = vertexIndices.size();
+	*out_vertices = new Vector3[size];
+	*out_uvs = new Vector2[size];
+	*out_normals = new Vector3[size];
 	// For each vertex of each triangle
-	for (unsigned int i = 0; i < vertexIndices.size(); i++) {
+	for (unsigned int i = 0; i < size; i++) {
 
 		// Get the indices of its attributes
 		unsigned int vertexIndex = vertexIndices[i];
@@ -91,11 +94,12 @@ bool OBJLoader::loadOBJ(
 		Vector3 normal = temp_normals[normalIndex - 1];
 
 		// Put the attributes in buffers
-		out_vertices.push_back(vertex);
-		out_uvs.push_back(uv);
-		out_normals.push_back(normal);
+		(*out_vertices)[i] = vertex;
+		(*out_uvs)[i] = uv;
+		(*out_normals)[i] = normal;
 
 	}
+	*verticesCount = size;
 	fclose(file);
 	return true;
 }
@@ -104,11 +108,12 @@ bool OBJLoader::loadOBJ(
 	const char* path,
 	GameObject* gameObject
 ) {
-	std::vector<Vector3> vertices;
-	std::vector<Vector2> uvs;
-	std::vector<Vector3> normals;
+	Vector3 *vertices;
+	Vector2 *uvs;
+	Vector3 *normals;
+	int verticesCount;
 
-	if (!loadOBJ(path, vertices, uvs, normals)) {
+	if (!loadOBJVerts(path, &vertices, &uvs, &normals, &verticesCount)) {
 		return false;
 	}
 
@@ -118,6 +123,8 @@ bool OBJLoader::loadOBJ(
 	mesh->normals = normals;
 	mesh->shader = gameObject->mesh->shader;
 	mesh->texture = gameObject->mesh->texture;
+	mesh->verticesCount = verticesCount;
+	mesh->GenerateBuffers();
 
 	gameObject->mesh = mesh;
 
@@ -128,17 +135,20 @@ bool OBJLoader::loadOBJ(
 	const char* path,
 	Mesh* mesh
 ) {
-	std::vector<Vector3> vertices;
-	std::vector<Vector2> uvs;
-	std::vector<Vector3> normals;
+	Vector3* vertices;
+	Vector2* uvs;
+	Vector3* normals;
+	int verticesCount;
 
-	if (!loadOBJ(path, vertices, uvs, normals)) {
+	if (!loadOBJVerts(path, &vertices, &uvs, &normals, &verticesCount)) {
 		return false;
 	}
 
 	mesh->vertices = vertices;
 	mesh->uvs = uvs;
 	mesh->normals = normals;
+	mesh->verticesCount = verticesCount;
+	mesh->GenerateBuffers();
 
 	return true;
 }

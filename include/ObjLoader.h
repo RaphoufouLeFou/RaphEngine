@@ -10,16 +10,9 @@
 #include "Vector.h"
 #include "GameObject.h"
 
-class RAPHENGINE_API OBJLoader
+static class RAPHENGINE_API OBJLoader
 {
 public:
-	static bool loadOBJ(
-		const char* path,
-		std::vector<Vector3>& out_vertices,
-		std::vector<Vector2>& out_uvs,
-		std::vector<Vector3>& out_normals
-	);
-
 	static bool loadOBJ(
 		const char* path,
 		GameObject* gameObject
