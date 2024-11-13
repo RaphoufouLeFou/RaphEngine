@@ -333,6 +333,9 @@ void RenderGameObject(GameObject * go) {
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 
+	delete[] LightPoses;
+	delete[] lightColor;
+	delete[] lightSettings;
 }
 
 void RenderObjects() {
