@@ -5,8 +5,8 @@
 
 class Renderer {
 public:
-	static const int* ResX;
-	static const int* ResY;
+	static int* ResX;
+	static int* ResY;
 	static void Init(bool fullScreen);
 	static bool IsKeyPressed(KeyCode key);
 	static void StartFrameRender();

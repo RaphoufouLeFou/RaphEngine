@@ -25,11 +25,12 @@
 
 glm::mat4 ViewMatrix = glm::mat4(1.0f);
 glm::mat4 ProjectionMatrix = glm::mat4(1.0f);
+glm::mat4 ModelMatrix = glm::mat4(1.0f);
 glm::mat4 MVP = glm::mat4(1.0f);
 
 GLFWwindow* window;
-const int* Renderer::ResX;
-const int* Renderer::ResY;
+int* Renderer::ResX;
+int* Renderer::ResY;
 
 Shader* textShader;
 
@@ -37,6 +38,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	// make sure the viewport matches the new window dimensions
 	glViewport(0, 0, width, height);
+	*Renderer::ResX = width;
+	*Renderer::ResY = height;
 }
 
 void SetHints() {
@@ -89,9 +92,20 @@ void CalculateMat() {
 	);
 
 
-	glm::mat4 ModelMatrix = glm::mat4(1.0);
-	MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+	glm::mat4 Model = glm::mat4(1.0);
+	MVP = ProjectionMatrix * ViewMatrix * Model;
 }
+
+
+const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+unsigned int depthMapFBO;
+// create depth texture
+unsigned int depthMap;
+
+Shader *shader;
+Shader *simpleDepthShader;
+Shader *debugDepthQuad;
+
 
 void Renderer::Init(bool fullScreen) {
 	if (!glfwInit()) {
@@ -103,8 +117,8 @@ void Renderer::Init(bool fullScreen) {
 
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 
-	ResX = &glfwGetVideoMode(monitor)->width;
-	ResY = &glfwGetVideoMode(monitor)->height;
+	ResX = (int *) &glfwGetVideoMode(monitor)->width;
+	ResY = (int *) &glfwGetVideoMode(monitor)->height;
 
 	window = glfwCreateWindow(*ResX, *ResY, RaphEngine::windowTitle, fullScreen ? monitor : NULL, NULL);
 
@@ -114,6 +128,8 @@ void Renderer::Init(bool fullScreen) {
 		exit(EXIT_FAILURE);
 	}
 
+
+	glfwGetWindowSize(window, Renderer::ResX, Renderer::ResY);
 	glfwMakeContextCurrent(window); // Initialize GLEW
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	
@@ -152,6 +168,34 @@ void Renderer::Init(bool fullScreen) {
 	glEnable(GL_DEBUG_OUTPUT);
 	Text::InitTextRendering();
 	glfwSwapInterval(0);
+
+	shader = new Shader("Assets/Shader/3.1.3.shadow_mapping.vs", "Assets/Shader/3.1.3.shadow_mapping.fs");
+	simpleDepthShader = new Shader("Assets/Shader/3.1.3.shadow_mapping_depth.vs", "Assets/Shader/3.1.3.shadow_mapping_depth.fs");
+	debugDepthQuad = new Shader("Assets/Shader/3.1.3.debug_quad.vs", "Assets/Shader/3.1.3.debug_quad_depth.fs");
+
+
+	glGenFramebuffers(1, &depthMapFBO);
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	// attach depth texture as FBO's depth buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	shader->use();
+	shader->setInt("diffuseTexture", 0);
+	shader->setInt("shadowMap", 1);
+	debugDepthQuad->use();
+	debugDepthQuad->setInt("depthMap", 0);
 }
 
 double Time::GetTime() {
@@ -232,7 +276,51 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 	glDeleteBuffers(1, &VBO);
 	glDeleteProgram(ImageShader->ID);
 	glDeleteTextures(1, &Texture);
+}
 
+void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int zIndex) {
+
+	float relativeX = (float)x / *Renderer::ResX;
+	float relativeY = (float)y / *Renderer::ResY;
+	float relativeSizeX = (float)sizeX / *Renderer::ResX;
+	float relativeSizeY = (float)sizeY / *Renderer::ResY;
+
+	float vertices[] = {
+		relativeX                , relativeY + relativeSizeY, zIndex, 01, // left
+		relativeX                , relativeY                , zIndex, 00, // right
+		relativeX + relativeSizeX, relativeY                , zIndex, 10, // top
+
+		relativeX                , relativeY + relativeSizeY, zIndex, 01, // left
+		relativeX + relativeSizeX, relativeY                , zIndex, 10, // top
+		relativeX + relativeSizeX, relativeY + relativeSizeY, zIndex, 11  // right
+	};
+
+	glBindTexture(GL_TEXTURE_2D, texture);
+	ImageShader->setInt("TextureSampler", 0);
+
+	unsigned int VBO, VAO;
+
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindVertexArray(0);
+
+	glUseProgram(ImageShader->ID);
+	glBindVertexArray(VAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(ImageShader->ID);
 }
 
 void Mesh::GenerateBuffers() {
@@ -265,20 +353,47 @@ void Mesh::GenerateBuffers() {
 	generatedBuffers = true;
 }
 
-void RenderGameObject(GameObject * go) {
+Vector3 ApplyRotation(Vector3 vec, float rotation) {
+	Vector3 result;
+	result.x = vec.x * cos(rotation) - vec.z * sin(rotation);
+	result.y = vec.y;
+	result.z = vec.x * sin(rotation) + vec.z * cos(rotation);
+	return result;
+}
+
+glm::mat4 lightSpaceMatrix;
+
+void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 	int err = 0;
 
 	if (go->mesh->verticesCount == 0)
 		return;
+	if (!go->mesh->castShadows && shadowRender)
+		return;
 
-	go->mesh->shader->use();
+	// std::cout << "Rendering " << go->name << std::endl;
 
-	go->mesh->shader ->setMat4("MVP", MVP);
+	Shader* shaderUse = sh == nullptr ? go->mesh->shader : sh;
+	shaderUse->use();
+
+	shaderUse->setMat4("projection", ProjectionMatrix);
+	shaderUse->setMat4("view", ViewMatrix);
+
+	ModelMatrix = glm::mat4(1.0f);
+	ModelMatrix = glm::translate(ModelMatrix, Vector3ToVec3(go->transform->position));
+	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)); 
+	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	ModelMatrix = glm::scale(ModelMatrix, Vector3ToVec3(go->transform->scale));
+
+	shaderUse->setMat4("model", ModelMatrix);
+	// shaderUse->setMat4("MVP", MVP);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, go->mesh->texture);
 
-	go->mesh->shader->setInt("myTextureSampler", 0);
+	shaderUse->setInt("myTextureSampler", 0);
+
 
 	GLuint vao = go->mesh->vao;
 
@@ -301,31 +416,61 @@ void RenderGameObject(GameObject * go) {
 	int lightCount = 1;
 
 	Vector3 *LightPoses = new Vector3[lightCount];
-	LightPoses[0] = Vector3(1, 1, 1);
+	LightPoses[0] = Vector3(-2.0f, 35.0f, -1.0f);
 
 	Vector3 *lightColor = new Vector3[lightCount];
 	lightColor[0] = Vector3(1, 1, 1);
 
 	Vector3 *lightSettings = new Vector3[lightCount];
-	lightSettings[0] = Vector3(2, 1, 0);
+	lightSettings[0] = Vector3(1, 10, 0);
 	
 
-	go->mesh->shader->setVec3Array("lightColor", lightCount, lightColor);
-	go->mesh->shader->setVec3Array("lightPos", lightCount, LightPoses);
-	go->mesh->shader->setVec3Array("lightSettings", lightCount, lightSettings);
+	shaderUse->setVec3Array("lightColor", lightCount, lightColor);
+	shaderUse->setVec3Array("lightPos", lightCount, LightPoses);
+	shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
 
 
-	go->mesh->shader->setInt("lightCount", lightCount);
-	go->mesh->shader->setVec3("ObjectPosition", go->transform->position);
+	shaderUse->setInt("lightCount", lightCount);
+
+	Vector3 rotationVect = go->transform->rotation;
+	GameObject* parent = go->parent;
+	/*
+	while (parent != nullptr) {
+		rotationVect += parent->transform->rotation;
+		parent = parent->parent;
+	}*/
 
 	glm::mat3 rotation = glm::mat3(1.0);
-	rotation[0] = glm::vec3(cos((go->transform->rotation.y)), 0, sin((go->transform->rotation.y)));
+	rotation[0] = glm::vec3(cos((rotationVect.y)), 0, sin((rotationVect.y)));
 	rotation[1] = glm::vec3(0, 1, 0);
-	rotation[2] = glm::vec3(-sin((go->transform->rotation.y)), 0, cos((go->transform->rotation.y)));
+	rotation[2] = glm::vec3(-sin((rotationVect.y)), 0, cos((rotationVect.y)));
 	
-	go->mesh->shader->setMat3("ObjectRotation", rotation);
-	go->mesh->shader->setVec3("ObjectScale", go->transform->scale);
-	go->mesh->shader->setBool("isTerrain", false);
+	Vector3 position = go->transform->position;
+	parent = go->parent;
+	/*
+	while (parent != nullptr) {
+		Vector3 newPos = ApplyRotation(parent->transform->position, parent->transform->rotation.y);
+		position += Vector3(newPos.x, newPos.y, newPos.z);
+		parent = parent->parent;
+	}
+	*/
+	shaderUse->setVec3("ObjectPosition", position);
+
+
+	shaderUse->setMat3("ObjectRotation", rotation);
+	shaderUse->setVec3("ObjectScale", go->transform->scale);
+	shaderUse->setBool("isTerrain", false);
+
+	// -- shadow --
+	// shaderUse->setVec3("viewPos", RaphEngine::camera->transform->position);
+	// shaderUse->setVec3("lightPos", (-2.0f, 4.0f, -1.0f));
+	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	// -- shadow --
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, go->mesh->texture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
 
 	glDrawArrays(GL_TRIANGLES, 0, go->mesh->verticesCount);
 
@@ -338,11 +483,11 @@ void RenderGameObject(GameObject * go) {
 	delete[] lightSettings;
 }
 
-void RenderObjects() {
+void RenderObjects(Shader* sh, bool shadowRender) {
 	CalculateMat();
 	for (GameObject* go : GameObject::SpawnedGameObjects) {
 		if(go->activeSelf && go->mesh)
-			RenderGameObject(go);
+			RenderGameObject(go, sh, shadowRender);
 	}
 }
 
@@ -513,15 +658,85 @@ void Text::RenderText(const char* text, float x, float y, float scale, Vector3 c
 
 }
 
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}
+
 void Renderer::StartFrameRender() {
+
+	// 1. render depth of scene to texture (from light's perspective)
+		// --------------------------------------------------------------
+	glm::mat4 lightProjection, lightView;
+	
+	float near_plane = 1.f, far_plane = 8.f;
+
+	//lightProjection = glm::perspective(glm::radians(120.f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	glm::vec3 lightPos(-2.0f, 35.0f, -1.0f);
+	lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(1, 1.0, 0.0));
+	lightSpaceMatrix = lightProjection * lightView;
+	// render scene from light's point of view
+	simpleDepthShader->use();
+	simpleDepthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	//glCullFace(GL_FRONT);
+	RenderObjects(simpleDepthShader, true);
+	//glCullFace(GL_BACK); // don't forget to reset original culling face
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// reset viewport
+	glViewport(0, 0, *ResX, *ResY);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	RenderObjects();
+
+	//Image::RenderImage(depthMap, 0, 0, 100, 100, 0);
+	RenderObjects(shader, false);
+
+	debugDepthQuad->use();
+	debugDepthQuad->setFloat("near_plane", near_plane);
+	debugDepthQuad->setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE0);
+
+
+	//GLuint Texture = ImageLoader::LoadImageGL("Assets/Textures/Logo.bmp", false);
+	//glBindTexture(GL_TEXTURE_2D, Texture);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	// renderQuad();
 }
 
 bool Renderer::RenderFrame() {
 
 	// text rendering
-	Text::RenderText("alpha dev build : vA0.000.2", 2, 2, 0.4f, Vector3(0, 0, 0));
+	Text::RenderText("alpha dev build : vA0.000.3", 2, 2, 0.4f, Vector3(0, 0, 0));
 
 	glfwSwapBuffers(window);
 

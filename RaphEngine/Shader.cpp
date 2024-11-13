@@ -46,12 +46,17 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
     catch (std::ifstream::failure& e)
     {
         std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+        std::cout << "File : " << vertexPath << std::endl;
+        std::cout << "File : " << fragmentPath << std::endl;
     }
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
     // 2. compile shaders
     unsigned int vertex, fragment;
     // vertex shader
+    std::cout << "OpenGL error: " << glGetError() << std::endl;
+    std::cout << "Vertex Shader: " << vertexPath << std::endl;
+    std::cout << "Fragment Shader: " << fragmentPath << std::endl;
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, NULL);
     glCompileShader(vertex);

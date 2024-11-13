@@ -4,6 +4,7 @@
 in vec2 UV;
 in vec3 FragPos;
 in vec3 Normal;
+in vec4 FragPosLightSpace;
 in float distToCamera;
 
 // Ouput data
@@ -32,6 +33,7 @@ void main() {
 			float diff = max(dot(norm, lightDir), 0.0);
 			float distToLight = distance(ObjectPosition, lightPos[i]);
 			float attenuation = lightSettings[i].y / (distToLight * distToLight);
+			if (attenuation > 1) attenuation = 1;
 			diffuse += diff * lightColor[i] * attenuation;
 		}
 		else if (lightSettings[i].x <= 2.5) {

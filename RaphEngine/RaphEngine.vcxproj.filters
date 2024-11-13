@@ -109,5 +109,23 @@
     <None Include="shader\text.fs">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shader\3.1.3.debug_quad.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\3.1.3.debug_quad_depth.fs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\3.1.3.shadow_mapping.fs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\3.1.3.shadow_mapping.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\3.1.3.shadow_mapping_depth.fs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shader\3.1.3.shadow_mapping_depth.vs">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

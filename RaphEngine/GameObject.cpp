@@ -30,6 +30,7 @@ void GameObject::Init() {
 	}
 	
 	mesh->shader = objShader;// BuildShader(VSShaderPath, FSShaderPath);
+	mesh->castShadows = true;
 	mesh->verticesCount = 0;
 	mesh->generatedBuffers = false;
 }
@@ -41,10 +42,13 @@ GameObject::GameObject() {
 	transform->rotation = { 0, 0, 0 };
 	transform->scale = { 1, 1, 1 };
 	transform->gameObject = this;
+	parent = nullptr;
+	children = nullptr;
 	activeSelf = true;
 	mesh = nullptr;
 	name = "new GameObject";
 }
+
 void Mesh::LoadTexture(const char* texturePath, bool smooth) {
 	texture = ImageLoader::LoadImageGL(texturePath, smooth);
 }

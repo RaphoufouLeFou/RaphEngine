@@ -124,6 +124,7 @@ bool OBJLoader::loadOBJ(
 	mesh->shader = gameObject->mesh->shader;
 	mesh->texture = gameObject->mesh->texture;
 	mesh->verticesCount = verticesCount;
+	mesh->castShadows = gameObject->mesh->castShadows;
 	mesh->GenerateBuffers();
 
 	gameObject->mesh = mesh;

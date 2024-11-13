@@ -18,6 +18,8 @@ class Mesh;
 class RAPHENGINE_API GameObject {
 public:
 	Transform* transform;
+	GameObject* parent;
+	GameObject** children;
 	const char* name;
 	Mesh* mesh;
 	bool activeSelf;
@@ -47,7 +49,7 @@ public:
 	Vector3 *normals;
 	Vector2 *uvs;
 	int verticesCount;
-
+	bool castShadows;
 	const char* texturePath;
 	void LoadTexture(const char* texturePath, bool smooth);
 

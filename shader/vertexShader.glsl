@@ -7,7 +7,7 @@ layout(location = 2) in vec3 vertexNormal;
 
 out vec3 Normal;
 out vec3 FragPos;
-
+out vec4 FragPosLightSpace;
 out vec2 UV;
 out float distToCamera;
 
@@ -17,6 +17,7 @@ uniform vec3 ObjectPosition;
 uniform mat3 ObjectRotation;
 uniform vec3 ObjectScale;
 uniform bool isTerrain;
+uniform mat4 lightSpaceMatrix;
 
 vec3 Rotate(vec3 v) {
 	vec3 res = ObjectRotation * v;
@@ -39,6 +40,7 @@ void main() {
 	distToCamera = distance(vposition, PlayerPosition);
 	mat4 modelView = mat4(1.0);
 	FragPos = vec3(modelView * vec4(vertexPosition, 1.0));
+	FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
 	UV = vertexUV;
 	Normal = Rotate(vertexNormal);
 	
