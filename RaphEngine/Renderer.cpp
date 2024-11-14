@@ -64,18 +64,19 @@ glm::vec2 Vector2ToVec2(Vector2 vec) {
 void CalculateMat() {
 
 	ProjectionMatrix = glm::perspective(glm::radians(RaphEngine::camera->fov), (float)(*Renderer::ResX) / (float)(*Renderer::ResY), 0.1f, 1000.0f);
-	float coef = 70;
+	float coef = 60;
 	float X = (float)(*Renderer::ResX) / 2 / coef;
 	float Y = (float)(*Renderer::ResY) / 2 / coef;
 	// ProjectionMatrix = glm::ortho(-X, X, -Y, Y, 0.3f, 300.00f);
 	// Camera matrix
-
 
 	glm::vec3 direction(
 		cos(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90)) * cos(DEG2RAD(RaphEngine::camera->transform->rotation.x)),
 		sin(DEG2RAD(RaphEngine::camera->transform->rotation.x)),
 		sin(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90)) * cos(DEG2RAD(RaphEngine::camera->transform->rotation.x))
 	);
+
+	// printf("Direction: %f %f %f\n", direction.x, direction.y, direction.z);
 
 	glm::vec3 right = glm::vec3(
 		cos(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90) - PI / 2.0f),
@@ -96,8 +97,8 @@ void CalculateMat() {
 	MVP = ProjectionMatrix * ViewMatrix * Model;
 }
 
-
-const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+const int factor = 8;
+const unsigned int SHADOW_WIDTH = 1024 * factor, SHADOW_HEIGHT = 1024 * factor;
 unsigned int depthMapFBO;
 // create depth texture
 unsigned int depthMap;
@@ -169,9 +170,9 @@ void Renderer::Init(bool fullScreen) {
 	Text::InitTextRendering();
 	glfwSwapInterval(0);
 
-	shader = new Shader("Assets/Shader/3.1.3.shadow_mapping.vs", "Assets/Shader/3.1.3.shadow_mapping.fs");
-	simpleDepthShader = new Shader("Assets/Shader/3.1.3.shadow_mapping_depth.vs", "Assets/Shader/3.1.3.shadow_mapping_depth.fs");
-	debugDepthQuad = new Shader("Assets/Shader/3.1.3.debug_quad.vs", "Assets/Shader/3.1.3.debug_quad_depth.fs");
+	shader = new Shader(shadow_mappingVS_shader, shadow_mappingFS_shader);
+	simpleDepthShader = new Shader(shadow_mapping_depthVS_shader, shadow_mapping_depthFS_shader);
+	debugDepthQuad = new Shader(debug_quad_VS_shader, debug_quad_depth_FS_shader);
 
 
 	glGenFramebuffers(1, &depthMapFBO);
@@ -221,7 +222,7 @@ std::vector<glm::vec2> Vector2ToVec2(std::vector<Vector2> vec) {
 Shader* ImageShader;
 
 void Image::InitImageRendering() {
-	ImageShader = new Shader("Assets/Shader/imagesVS.glsl", "Assets/Shader/imagesFS.glsl");
+	ImageShader = new Shader(imagesVS_shader, imagesFS_shader);
 }
 
 void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) {
@@ -371,8 +372,6 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 	if (!go->mesh->castShadows && shadowRender)
 		return;
 
-	// std::cout << "Rendering " << go->name << std::endl;
-
 	Shader* shaderUse = sh == nullptr ? go->mesh->shader : sh;
 	shaderUse->use();
 
@@ -416,7 +415,7 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 	int lightCount = 1;
 
 	Vector3 *LightPoses = new Vector3[lightCount];
-	LightPoses[0] = Vector3(-2.0f, 35.0f, -1.0f);
+	LightPoses[0] = /*RaphEngine::camera->transform->position;*/ Vector3(-2.0f, 35.0f, -1.0f);
 
 	Vector3 *lightColor = new Vector3[lightCount];
 	lightColor[0] = Vector3(1, 1, 1);
@@ -426,8 +425,8 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 	
 
 	shaderUse->setVec3Array("lightColor", lightCount, lightColor);
-	shaderUse->setVec3Array("lightPos", lightCount, LightPoses);
-	shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
+	shaderUse->setVec4("lightPos", glm::vec4(1, 1, 0, 0.0f));
+	//shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
 
 
 	shaderUse->setInt("lightCount", lightCount);
@@ -499,7 +498,7 @@ std::map<GLchar, Character> Characters;
 unsigned int VAO, VBO;
 
 void Text::InitTextRendering() {
-	textShader = new Shader("Assets/Shader/text.vs", "Assets/Shader/text.fs");
+	textShader = new Shader(textVS_shader, textFS_shader);
 	glm::mat4 projection = glm::ortho(0.0f, (float)(*Renderer::ResX), 0.0f, (float)(*Renderer::ResY));
 	textShader->use();
 	glUniformMatrix4fv(glGetUniformLocation(textShader->ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -594,7 +593,8 @@ void Text::InitTextRendering() {
 
 void Text::RenderText(const char* text, float x, float y, float scale, Vector3 color)
 {
-	GLuint VertexArrayID;
+	static GLuint VertexArrayID;
+	glDeleteVertexArrays(1, &VertexArrayID);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -650,12 +650,11 @@ void Text::RenderText(const char* text, float x, float y, float scale, Vector3 c
 
 	glDisable(GL_BLEND);
 
-
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
 	glDisableVertexAttribArray(0);
-
+	
 }
 
 unsigned int quadVAO = 0;
@@ -693,13 +692,47 @@ void Renderer::StartFrameRender() {
 		// --------------------------------------------------------------
 	glm::mat4 lightProjection, lightView;
 	
-	float near_plane = 1.f, far_plane = 8.f;
+	float near_plane = 1.f, far_plane = 7.5f;
 
-	//lightProjection = glm::perspective(glm::radians(120.f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
-	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	glm::vec3 lightPos(-2.0f, 35.0f, -1.0f);
-	lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(1, 1.0, 0.0));
+	///lightProjection = glm::perspective(glm::radians(165.f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+	lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
+	Vector3 pos = RaphEngine::camera->transform->position;
+	if (RaphEngine::Player != nullptr)
+	{
+
+		pos = RaphEngine::Player->transform->position + Vector3(
+			5 * sin(RaphEngine::Player->transform->rotation.y),
+			3,
+			-5 * cos(RaphEngine::Player->transform->rotation.y)
+		);
+	}
+	glm::vec3 lightPos = Vector3ToVec3(pos);// (-2.0f, 35.0f, -1.0f);
+	//lightPos.y += 2;
+
+	Vector3 rotation(-150, 90, 0);
+	glm::vec3 direction(
+		cos(DEG2RAD(rotation.y - 90)) * cos(DEG2RAD(rotation.x)),
+		sin(DEG2RAD(rotation.x)),
+		sin(DEG2RAD(rotation.y - 90)) * cos(DEG2RAD(rotation.x))
+	);
+
+	glm::vec3 right = glm::vec3(
+		cos(DEG2RAD(rotation.y - 90) - PI / 2.0f),
+		0,
+		sin(DEG2RAD(rotation.y - 90) - PI / 2.0f)
+	);
+
+	glm::vec3 up = glm::cross(right, direction);
+
+	lightView = glm::lookAt(
+		lightPos,
+		lightPos + direction, // and looks here : at the same position, plus "direction"
+		up                  // Head is up (set to 0,-1,0 to look upside-down)
+	);
+
+	//lightView = glm::lookAt(lightPos, dir, up);
 	lightSpaceMatrix = lightProjection * lightView;
+	
 	// render scene from light's point of view
 	simpleDepthShader->use();
 	simpleDepthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
@@ -730,7 +763,7 @@ void Renderer::StartFrameRender() {
 	//GLuint Texture = ImageLoader::LoadImageGL("Assets/Textures/Logo.bmp", false);
 	//glBindTexture(GL_TEXTURE_2D, Texture);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
-	// renderQuad();
+	renderQuad();
 }
 
 bool Renderer::RenderFrame() {

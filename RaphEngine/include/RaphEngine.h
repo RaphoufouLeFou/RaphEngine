@@ -14,6 +14,8 @@
 #include "Images.h"
 #include "Inputs.h"
 
+typedef char byte;
+
 class RAPHENGINE_API Time {
 public:
 	static double deltaTime;
@@ -23,7 +25,7 @@ public:
 class RaphEngine
 {
 public:
-
+	static RAPHENGINE_API GameObject *Player;
 	static const char* windowTitle;
 	static RAPHENGINE_API void Init(const char* windowTitle);
 	static RAPHENGINE_API void Run();

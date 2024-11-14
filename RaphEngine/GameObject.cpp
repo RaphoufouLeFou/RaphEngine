@@ -7,10 +7,6 @@
 std::vector<GameObject*> GameObject::SpawnedGameObjects =
 	std::vector<GameObject*>();
 
-
-const char* VSShaderPath = "Assets/Shader/vertexShader.glsl";
-const char* FSShaderPath = "Assets/Shader/fragmentShader.glsl";
-
 Shader* objShader = nullptr;
 
 Shader * BuildShader(const char * vertexPath, const char * fragmentPath) {
@@ -26,7 +22,7 @@ void GameObject::Init() {
 		mesh = new Mesh();
 	}
 	if (objShader == nullptr) {
-		objShader = BuildShader(VSShaderPath, FSShaderPath);
+		objShader = BuildShader(vertexShader_shader, fragmentShader_shader);
 	}
 	
 	mesh->shader = objShader;// BuildShader(VSShaderPath, FSShaderPath);

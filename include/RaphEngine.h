@@ -25,7 +25,7 @@ public:
 class RaphEngine
 {
 public:
-
+	static RAPHENGINE_API GameObject *Player;
 	static const char* windowTitle;
 	static RAPHENGINE_API void Init(const char* windowTitle);
 	static RAPHENGINE_API void Run();

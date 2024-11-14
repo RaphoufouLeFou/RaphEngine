@@ -10,6 +10,7 @@
 
 const char * RaphEngine::windowTitle = "RaphEngine";
 Camera* RaphEngine::camera = new Camera();
+GameObject* RaphEngine::Player = nullptr;
 
 double Time::deltaTime = 0.0f;
 

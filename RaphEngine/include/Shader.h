@@ -7,7 +7,7 @@
 
 
 #include "include/Vector.h"
-
+#include "../shader/shaders.h"
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -17,7 +17,7 @@ class Shader
 {
 public:
     unsigned int ID;
-    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
+    Shader(const char* vShaderCode, const char* fShaderCode);
     void use();
     void setBool(const char* name, bool value) const;
     void setInt(const char* name, int value) const;

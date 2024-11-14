@@ -57,6 +57,9 @@
     <ClInclude Include="include\Images.h">
       <Filter>Fichiers d%27en-tête\include</Filter>
     </ClInclude>
+    <ClInclude Include="shader\shaders.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RaphEngine.cpp">
@@ -89,42 +92,45 @@
     <ClCompile Include="Inputs.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="shader\shaders.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader\vertexShader.glsl">
+    <None Include="..\shader\debug_quad_depth_FS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\fragmentShader.glsl">
+    <None Include="..\shader\debug_quad_VS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\text.vs">
+    <None Include="..\shader\fragmentShader.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\imagesFS.glsl">
+    <None Include="..\shader\imagesFS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\imagesVS.glsl">
+    <None Include="..\shader\imagesVS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\text.fs">
+    <None Include="..\shader\shadow_mapping_depthFS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\3.1.3.debug_quad.vs">
+    <None Include="..\shader\shadow_mapping_depthVS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\3.1.3.debug_quad_depth.fs">
+    <None Include="..\shader\shadow_mappingFS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\3.1.3.shadow_mapping.fs">
+    <None Include="..\shader\shadow_mappingVS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\3.1.3.shadow_mapping.vs">
+    <None Include="..\shader\textFS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\3.1.3.shadow_mapping_depth.fs">
+    <None Include="..\shader\textVS.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shader\3.1.3.shadow_mapping_depth.vs">
+    <None Include="..\shader\vertexShader.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
