@@ -147,6 +147,7 @@ uniform sampler2D shadowMap;
 
 uniform vec4 lightPos;
 uniform vec3 viewPos;
+uniform vec2 textureScale;
 
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
@@ -179,14 +180,14 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     
     // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
     if(projCoords.z > 1.0)
-        shadow = 0.0;
+        shadow = 2.0;
         
     return shadow;
 }
 
 void main()
 {           
-    vec3 color = texture(diffuseTexture, fs_in.TexCoords).rgb;
+    vec3 color = texture(diffuseTexture, fs_in.TexCoords * textureScale).rgb;
     vec3 normal = normalize(fs_in.Normal);
     vec3 lightColor = vec3(1.0);
     // ambient
@@ -211,8 +212,13 @@ void main()
     spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
     vec3 specular = spec * lightColor;    
     // calculate shadow
-    float shadow = ShadowCalculation(fs_in.FragPosLightSpace);                      
-    vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
+    float shadow = ShadowCalculation(fs_in.FragPosLightSpace);
+    vec3 shadowVec;
+    if (shadow > 1.0)
+        shadowVec = vec3(1, 0, 0);
+    else
+        shadowVec = vec3(1 - shadow);
+    vec3 lighting = (ambient + shadowVec * (diffuse + specular)) * color;
     
     FragColor = vec4(lighting, 1.0);
     //FragColor = vec4(1, 0, 0, 1);

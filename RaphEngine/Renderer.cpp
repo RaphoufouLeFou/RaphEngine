@@ -458,6 +458,7 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 
 	shaderUse->setMat3("ObjectRotation", rotation);
 	shaderUse->setVec3("ObjectScale", go->transform->scale);
+	shaderUse->setVec2("textureScale", go->mesh->TextureScale);
 	shaderUse->setBool("isTerrain", false);
 
 	// -- shadow --
@@ -706,8 +707,9 @@ void Renderer::StartFrameRender() {
 			-5 * cos(RaphEngine::Player->transform->rotation.y)
 		);
 	}
-	glm::vec3 lightPos = Vector3ToVec3(pos);// (-2.0f, 35.0f, -1.0f);
-	//lightPos.y += 2;
+	glm::vec3 lightPos = Vector3ToVec3((-2.0f, 35.0f, -1.0f));// (-2.0f, 35.0f, -1.0f);
+	//
+	// lightPos.y += 2;
 
 	Vector3 rotation(-150, 90, 0);
 	glm::vec3 direction(
@@ -722,15 +724,15 @@ void Renderer::StartFrameRender() {
 		sin(DEG2RAD(rotation.y - 90) - PI / 2.0f)
 	);
 
-	glm::vec3 up = glm::cross(right, direction);
-
+	// glm::vec3 up = glm::cross(right, direction);
+	/*
 	lightView = glm::lookAt(
 		lightPos,
 		lightPos + direction, // and looks here : at the same position, plus "direction"
 		up                  // Head is up (set to 0,-1,0 to look upside-down)
 	);
-
-	//lightView = glm::lookAt(lightPos, dir, up);
+	*/
+	lightView = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	lightSpaceMatrix = lightProjection * lightView;
 	
 	// render scene from light's point of view
@@ -763,13 +765,13 @@ void Renderer::StartFrameRender() {
 	//GLuint Texture = ImageLoader::LoadImageGL("Assets/Textures/Logo.bmp", false);
 	//glBindTexture(GL_TEXTURE_2D, Texture);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
-	renderQuad();
+	// renderQuad();
 }
 
 bool Renderer::RenderFrame() {
 
 	// text rendering
-	Text::RenderText("alpha dev build : vA0.000.3", 2, 2, 0.4f, Vector3(0, 0, 0));
+	Text::RenderText("alpha dev build : vA0.000.4", 2, 2, 0.4f, Vector3(0, 0, 0));
 
 	glfwSwapBuffers(window);
 

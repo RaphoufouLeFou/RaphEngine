@@ -48,6 +48,7 @@ public:
 	Vector3 *vertices;
 	Vector3 *normals;
 	Vector2 *uvs;
+	Vector2 TextureScale;
 	int verticesCount;
 	bool castShadows;
 	const char* texturePath;

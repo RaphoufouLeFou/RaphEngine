@@ -47,6 +47,7 @@ GameObject::GameObject() {
 
 void Mesh::LoadTexture(const char* texturePath, bool smooth) {
 	texture = ImageLoader::LoadImageGL(texturePath, smooth);
+	TextureScale = { 1, 1 };
 }
 
 GameObject::~GameObject() {
