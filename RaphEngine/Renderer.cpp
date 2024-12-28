@@ -11,7 +11,8 @@
 #include FT_FREETYPE_H
 #include <SDL_ttf.h>
 #include <map>
-#include <glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <gtx/quaternion.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 
@@ -97,7 +98,7 @@ void CalculateMat() {
 	MVP = ProjectionMatrix * ViewMatrix * Model;
 }
 
-const int factor = 8;
+const int factor = 6 ;
 const unsigned int SHADOW_WIDTH = 1024 * factor, SHADOW_HEIGHT = 1024 * factor;
 unsigned int depthMapFBO;
 // create depth texture
@@ -168,6 +169,7 @@ void Renderer::Init(bool fullScreen) {
 
 	glEnable(GL_DEBUG_OUTPUT);
 	Text::InitTextRendering();
+	Image::InitImageRendering();
 	glfwSwapInterval(0);
 
 	shader = new Shader(shadow_mappingVS_shader, shadow_mappingFS_shader);
@@ -195,6 +197,7 @@ void Renderer::Init(bool fullScreen) {
 	shader->use();
 	shader->setInt("diffuseTexture", 0);
 	shader->setInt("shadowMap", 1);
+	shader->setInt("normalMap", 2);
 	debugDepthQuad->use();
 	debugDepthQuad->setInt("depthMap", 0);
 }
@@ -227,8 +230,8 @@ void Image::InitImageRendering() {
 
 void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) {
 
-	float relativeX = (float)x / *Renderer::ResX;
-	float relativeY = (float)y / *Renderer::ResY;
+	float relativeX = (float)x / *Renderer::ResX - 1.0/2.0;
+	float relativeY = (float)y / *Renderer::ResY - 1.0/2.0;
 	float relativeSizeX = (float)sizeX / *Renderer::ResX;
 	float relativeSizeY = (float)sizeY / *Renderer::ResY;
 
@@ -244,12 +247,17 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 
 	static std::map<std::string, GLuint> Textures;
 
+	ImageShader->use();
+
 	if (Textures.find(path) == Textures.end()) {
 		GLuint Texture = ImageLoader::LoadImageGL(path.c_str(), false);
+
 		Textures.insert(std::pair<std::string, GLuint>(path, Texture));
 	}
 
 	GLuint Texture = Textures[path];
+
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, Texture);
 	ImageShader->setInt("TextureSampler", 0);
 
@@ -269,20 +277,17 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 
 	glBindVertexArray(0);
 
-	glUseProgram(ImageShader->ID);
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(ImageShader->ID);
-	glDeleteTextures(1, &Texture);
 }
 
 void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int zIndex) {
 
-	float relativeX = (float)x / *Renderer::ResX;
-	float relativeY = (float)y / *Renderer::ResY;
+	float relativeX = ((x / *Renderer::ResX) * 2 - 1);
+	float relativeY = ((y / *Renderer::ResY) * 2 - 1);
 	float relativeSizeX = (float)sizeX / *Renderer::ResX;
 	float relativeSizeY = (float)sizeY / *Renderer::ResY;
 
@@ -296,6 +301,8 @@ void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int 
 		relativeX + relativeSizeX, relativeY + relativeSizeY, zIndex, 11  // right
 	};
 
+	ImageShader->use();
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	ImageShader->setInt("TextureSampler", 0);
 
@@ -315,43 +322,12 @@ void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int 
 
 	glBindVertexArray(0);
 
-	glUseProgram(ImageShader->ID);
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(ImageShader->ID);
-}
 
-void Mesh::GenerateBuffers() {
-
-	if (generatedBuffers)
-	{
-		glDeleteBuffers(1, &vertexbuffer);
-		glDeleteBuffers(1, &uvbuffer);
-		glDeleteBuffers(1, &normalbuffer);
-		glDeleteVertexArrays(1, &vao);
-	}
-
-	
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, verticesCount * sizeof(Vector3), vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &uvbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferData(GL_ARRAY_BUFFER, verticesCount * sizeof(Vector2), uvs, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &normalbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-	glBufferData(GL_ARRAY_BUFFER, verticesCount * sizeof(Vector3), normals, GL_STATIC_DRAW);
-
-	generatedBuffers = true;
 }
 
 Vector3 ApplyRotation(Vector3 vec, float rotation) {
@@ -364,15 +340,26 @@ Vector3 ApplyRotation(Vector3 vec, float rotation) {
 
 glm::mat4 lightSpaceMatrix;
 
-void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
+Shader* objShader = nullptr;
+
+Shader* BuildShader(const char* vertexPath, const char* fragmentPath) {
+	Shader* shader = new Shader(vertexPath, fragmentPath);
+	if (shader == nullptr) {
+		std::cout << "Failed to build shader" << std::endl;
+	}
+	return shader;
+}
+
+
+
+void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 SunDir) {
 	int err = 0;
 
-	if (go->mesh->verticesCount == 0)
-		return;
 	if (!go->mesh->castShadows && shadowRender)
 		return;
 
-	Shader* shaderUse = sh == nullptr ? go->mesh->shader : sh;
+	Shader* Objectshader = objShader == nullptr ? BuildShader(shadow_mappingVS_shader, shadow_mappingFS_shader) : objShader;
+	Shader* shaderUse = sh == nullptr ? Objectshader : sh;
 	shaderUse->use();
 
 	shaderUse->setMat4("projection", ProjectionMatrix);
@@ -380,56 +367,54 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 
 	ModelMatrix = glm::mat4(1.0f);
 	ModelMatrix = glm::translate(ModelMatrix, Vector3ToVec3(go->transform->position));
+	/*
 	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)); 
 	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	*/
+	ModelMatrix = ModelMatrix * glm::toMat4(glm::quat(-Vector3ToVec3(go->transform->rotation)));
 	ModelMatrix = glm::scale(ModelMatrix, Vector3ToVec3(go->transform->scale));
 
 	shaderUse->setMat4("model", ModelMatrix);
 	// shaderUse->setMat4("MVP", MVP);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, go->mesh->texture);
+	glGenVertexArrays(1, &go->mesh->vao);
+	glGenBuffers(1, &go->mesh->vbo);
+	glGenBuffers(1, &go->mesh->ebo);
 
-	shaderUse->setInt("myTextureSampler", 0);
+	glBindVertexArray(go->mesh->vao);
+	// load data into vertex buffers
+	glBindBuffer(GL_ARRAY_BUFFER, go->mesh->vbo);
+	// A great thing about structs is that their memory layout is sequential for all its items.
+	// The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
+	// again translates to 3/2 floats which translates to a byte array.
+	glBufferData(GL_ARRAY_BUFFER, go->mesh->vertices.size() * sizeof(Vertex), &go->mesh->vertices[0], GL_STATIC_DRAW);
 
-
-	GLuint vao = go->mesh->vao;
-
-	GLuint uvbuffer = go->mesh->uvbuffer;
-	GLuint vertexbuffer = go->mesh->vertexbuffer;
-	GLuint normalbuffer = go->mesh->normalbuffer;
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, go->mesh->ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, go->mesh->indices.size() * sizeof(unsigned int), &go->mesh->indices[0], GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
+	// vertex Positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+	// vertex normals
 	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+	// vertex texture coords
 	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	int lightCount = 1;
-
-	Vector3 *LightPoses = new Vector3[lightCount];
-	LightPoses[0] = /*RaphEngine::camera->transform->position;*/ Vector3(-2.0f, 35.0f, -1.0f);
-
-	Vector3 *lightColor = new Vector3[lightCount];
-	lightColor[0] = Vector3(1, 1, 1);
-
-	Vector3 *lightSettings = new Vector3[lightCount];
-	lightSettings[0] = Vector3(1, 10, 0);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+	// vertex tangent
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+	// vertex bitangent
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 	
 
-	shaderUse->setVec3Array("lightColor", lightCount, lightColor);
 	shaderUse->setVec4("lightPos", glm::vec4(1, 1, 0, 0.0f));
+	shaderUse->setVec3("lightDir", Vector3(-SunDir.x, -SunDir.y, -SunDir.z));
+	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->position);
 	//shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
 
-
-	shaderUse->setInt("lightCount", lightCount);
 
 	Vector3 rotationVect = go->transform->rotation;
 	GameObject* parent = go->parent;
@@ -453,41 +438,54 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender) {
 		parent = parent->parent;
 	}
 	*/
-	shaderUse->setVec3("ObjectPosition", position);
 
-
-	shaderUse->setMat3("ObjectRotation", rotation);
-	shaderUse->setVec3("ObjectScale", go->transform->scale);
-	shaderUse->setVec2("textureScale", go->mesh->TextureScale);
-	shaderUse->setBool("isTerrain", false);
-
-	// -- shadow --
-	// shaderUse->setVec3("viewPos", RaphEngine::camera->transform->position);
-	// shaderUse->setVec3("lightPos", (-2.0f, 4.0f, -1.0f));
 	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
 	// -- shadow --
+	// bind appropriate textures
+	unsigned int diffuseNr = 1;
+	unsigned int specularNr = 1;
+	unsigned int normalNr = 1;
+	unsigned int heightNr = 1;
+	for (unsigned int i = 1; i < go->mesh->textures.size() + 1; i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
+		// retrieve texture number (the N in diffuse_textureN)
+		std::string number;
+		std::string name = go->mesh->textures[i].type;
+		if (name == "texture_diffuse")
+			number = std::to_string(diffuseNr++);
+		else if (name == "texture_specular")
+			number = std::to_string(specularNr++); // transfer unsigned int to string
+		else if (name == "texture_normal")
+			number = std::to_string(normalNr++); // transfer unsigned int to string
+		else if (name == "texture_height")
+			number = std::to_string(heightNr++); // transfer unsigned int to string
+
+		// now set the sampler to the correct texture unit
+		shaderUse->setInt((name + number).c_str(), i);
+		// and finally bind the texture
+		glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
+	}
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, go->mesh->texture);
-	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
 
-	glDrawArrays(GL_TRIANGLES, 0, go->mesh->verticesCount);
+	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(go->mesh->indices.size()), GL_UNSIGNED_INT, 0);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
+	glDisableVertexAttribArray(3);
+	glDisableVertexAttribArray(4);
 
-	delete[] LightPoses;
-	delete[] lightColor;
-	delete[] lightSettings;
 }
 
-void RenderObjects(Shader* sh, bool shadowRender) {
+void RenderObjects(Shader* sh, bool shadowRender, glm::vec3 lightDir) {
 	CalculateMat();
 	for (GameObject* go : GameObject::SpawnedGameObjects) {
 		if(go->activeSelf && go->mesh)
-			RenderGameObject(go, sh, shadowRender);
+			RenderGameObject(go, sh, shadowRender, lightDir);
 	}
 }
 
@@ -687,54 +685,32 @@ void renderQuad()
 	glBindVertexArray(0);
 }
 
-void Renderer::StartFrameRender() {
-
+void CalculateLights(glm::vec3 lightDir)
+{
+	float range = 50.0f;
 	// 1. render depth of scene to texture (from light's perspective)
-		// --------------------------------------------------------------
+	// --------------------------------------------------------------
 	glm::mat4 lightProjection, lightView;
-	
-	float near_plane = 1.f, far_plane = 7.5f;
 
-	///lightProjection = glm::perspective(glm::radians(165.f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
-	lightProjection = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
+	float near_plane = .1f, far_plane = range * 2.0f;
+
+	//lightProjection = glm::perspective(glm::radians(165.f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+	lightProjection = glm::ortho(-range * 1.5f, range * 1.5f, -range * 1.5f, range * 1.5f, near_plane, far_plane);
 	Vector3 pos = RaphEngine::camera->transform->position;
 	if (RaphEngine::Player != nullptr)
 	{
-
-		pos = RaphEngine::Player->transform->position + Vector3(
-			5 * sin(RaphEngine::Player->transform->rotation.y),
-			3,
-			-5 * cos(RaphEngine::Player->transform->rotation.y)
-		);
+		pos = RaphEngine::Player->transform->position;
 	}
-	glm::vec3 lightPos = Vector3ToVec3((-2.0f, 35.0f, -1.0f));// (-2.0f, 35.0f, -1.0f);
-	//
-	// lightPos.y += 2;
+	//std::cout << "Player pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
+	glm::vec3 lightPos(pos.x, pos.y, pos.z);// (-2.0f, 35.0f, -1.0f);
 
-	Vector3 rotation(-150, 90, 0);
-	glm::vec3 direction(
-		cos(DEG2RAD(rotation.y - 90)) * cos(DEG2RAD(rotation.x)),
-		sin(DEG2RAD(rotation.x)),
-		sin(DEG2RAD(rotation.y - 90)) * cos(DEG2RAD(rotation.x))
-	);
+	lightPos -= range * lightDir;
 
-	glm::vec3 right = glm::vec3(
-		cos(DEG2RAD(rotation.y - 90) - PI / 2.0f),
-		0,
-		sin(DEG2RAD(rotation.y - 90) - PI / 2.0f)
-	);
+	//std::cout << "Light pos: " << lightPos.x << " " << lightPos.y << " " << lightPos.z << std::endl;
 
-	// glm::vec3 up = glm::cross(right, direction);
-	/*
-	lightView = glm::lookAt(
-		lightPos,
-		lightPos + direction, // and looks here : at the same position, plus "direction"
-		up                  // Head is up (set to 0,-1,0 to look upside-down)
-	);
-	*/
-	lightView = glm::lookAt(lightPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	lightView = glm::lookAt(lightPos, lightPos + lightDir, glm::vec3(0.0, 1.0, 0.0));
 	lightSpaceMatrix = lightProjection * lightView;
-	
+
 	// render scene from light's point of view
 	simpleDepthShader->use();
 	simpleDepthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
@@ -743,19 +719,31 @@ void Renderer::StartFrameRender() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
-	//glCullFace(GL_FRONT);
-	RenderObjects(simpleDepthShader, true);
-	//glCullFace(GL_BACK); // don't forget to reset original culling face
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	//glCullFace(GL_FRONT);
+	RenderObjects(simpleDepthShader, true, glm::vec3(0.f));
+	//glCullFace(GL_BACK); // don't forget to reset original culling face
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	// reset viewport
+}
+
+void Renderer::StartFrameRender() {
+
+	float lightRotation = Time::GetTime() / 1000.0f;
+	glm::vec3 Ldir = glm::vec3(cos(lightRotation), -1, sin(lightRotation));
+
+	glm::vec3 lightDirNorm = glm::normalize(Ldir);
+	CalculateLights(lightDirNorm);
+	// CalculateLights(glm::vec3(0, -1, -1));
 	glViewport(0, 0, *ResX, *ResY);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//Image::RenderImage(depthMap, 0, 0, 100, 100, 0);
-	RenderObjects(shader, false);
+	//Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
+	RenderObjects(shader, false, lightDirNorm);
 
+	/*
 	debugDepthQuad->use();
 	debugDepthQuad->setFloat("near_plane", near_plane);
 	debugDepthQuad->setFloat("far_plane", far_plane);
@@ -764,7 +752,9 @@ void Renderer::StartFrameRender() {
 
 	//GLuint Texture = ImageLoader::LoadImageGL("Assets/Textures/Logo.bmp", false);
 	//glBindTexture(GL_TEXTURE_2D, Texture);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);*/
+
+	// Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
 	// renderQuad();
 }
 
@@ -772,6 +762,8 @@ bool Renderer::RenderFrame() {
 
 	// text rendering
 	Text::RenderText("alpha dev build : vA0.000.4", 2, 2, 0.4f, Vector3(0, 0, 0));
+
+	
 
 	glfwSwapBuffers(window);
 

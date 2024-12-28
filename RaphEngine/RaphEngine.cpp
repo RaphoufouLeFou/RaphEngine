@@ -18,7 +18,7 @@ void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
 	{
 		GameObject* go = GameObject::SpawnedGameObjects[i];
-		go->Init();
+		//go->Init();
 		go->Start();
 
 	}

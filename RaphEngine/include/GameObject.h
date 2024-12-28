@@ -10,6 +10,7 @@
 #include <vector>
 #ifdef RAPHENGINE_EXPORTS
 #include "Shader.h"
+#include <string>
 #endif
 
 class Transform;
@@ -43,26 +44,41 @@ public:
 	void SetScale(Vector3 scale);
 };
 
+struct RAPHENGINE_API Vertex {
+	Vector3 Position;
+	Vector3 Normal;
+	Vector2 TexCoords;
+	Vector3 Tangent;
+	Vector3 Bitangent;
+};
+
+struct RAPHENGINE_API Texture {
+	unsigned int id;
+	std::string type;
+	std::string path;
+};
+
 class RAPHENGINE_API Mesh {
 public:
-	Vector3 *vertices;
-	Vector3 *normals;
-	Vector2 *uvs;
-	Vector2 TextureScale;
-	int verticesCount;
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	std::vector<Texture> textures;
+
 	bool castShadows;
-	const char* texturePath;
-	void LoadTexture(const char* texturePath, bool smooth);
+	bool staticMesh;
 
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
+	{
+		this->vertices = vertices;
+		this->indices = indices;
+		this->textures = textures;
+
+		GenerateBuffers();
+	}
 #ifdef RAPHENGINE_EXPORTS
-	Shader* shader;
-	GLuint texture;
-	GLuint vao;
-	GLuint uvbuffer;
-	GLuint vertexbuffer;
-	GLuint normalbuffer;
-	bool generatedBuffers;
 
+	unsigned int vao, vbo, ebo;
+private:
 	void GenerateBuffers();
 #endif
 };

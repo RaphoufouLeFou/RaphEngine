@@ -112,14 +112,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;D:\DOCUMENTS\GitHub\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>F:\Documents\Libraries\steam\lib\win64;F:\Documents\Libraries\freetype-2.13.2\objs\x64\Debug;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;F:\Documents\Libraries\SDL2\lib\x64;F:\Documents\Libraries\glew-2.1.0\lib\Release\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;kernel32.lib;user32.lib;glew32.lib;freetype.lib;SDL2.lib;SDL2main.lib;Shell32.lib;steam_api64.lib;SDL2_image.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\Documents\Libraries\steam\lib\win64;F:\Documents\Libraries\freetype-2.13.2\objs\x64\Debug;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;F:\Documents\Libraries\SDL2\lib\x64;F:\Documents\Libraries\glew-2.1.0\lib\Release\x64;D:\DOCUMENTS\GitHub\RaphEngine\libs</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;kernel32.lib;user32.lib;glew32.lib;freetype.lib;SDL2.lib;SDL2main.lib;Shell32.lib;steam_api64.lib;SDL2_image.lib;assimp.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y /d  "$(OutDir)RaphEngine.dll" "$(ProjectDir)..\libs\"
@@ -140,7 +140,7 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;D:\DOCUMENTS\GitHub\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -148,14 +148,15 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>F:\Documents\Libraries\steam\lib\win64;F:\Documents\Libraries\freetype-2.13.2\objs\x64\Debug;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;F:\Documents\Libraries\SDL2\lib\x64;F:\Documents\Libraries\glew-2.1.0\lib\Release\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;kernel32.lib;user32.lib;glew32.lib;freetype.lib;SDL2.lib;SDL2main.lib;Shell32.lib;steam_api64.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\Documents\Libraries\steam\lib\win64;F:\Documents\Libraries\freetype-2.13.2\objs\x64\Debug;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;F:\Documents\Libraries\SDL2\lib\x64;F:\Documents\Libraries\glew-2.1.0\lib\Release\x64;D:\DOCUMENTS\GitHub\RaphEngine\libs</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;kernel32.lib;user32.lib;glew32.lib;freetype.lib;SDL2.lib;SDL2main.lib;Shell32.lib;steam_api64.lib;SDL2_image.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>python -u "$(ProjectDir)..\tools\shaderUtils.py"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="F:\downloads\stb_image.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\GameObject.h" />
     <ClInclude Include="include\ImageLoader.h" />
@@ -186,6 +187,7 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="shader\shaders.cpp" />
+    <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="Vector.cpp" />
   </ItemGroup>
   <ItemGroup>
