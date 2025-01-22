@@ -415,7 +415,7 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 	
-	shaderUse->setVec4("lightPos", glm::vec4(1, 1, 0, 0.0f));
+	shaderUse->setVec3("lightPos", Vector3(1, 3, 0));
 	shaderUse->setVec3("lightDir", Vector3(-SunDir.x, -SunDir.y, -SunDir.z));
 	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->position);
 	//shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
@@ -472,6 +472,7 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 		// and finally bind the texture
 		glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
 	}
+	shaderUse->setBool("HaveNormalMap", normalNr > 1);
 
 	//glBindTexture(GL_TEXTURE_2D, depthMap);
 	glBindVertexArray(go->mesh->vao);
@@ -493,6 +494,12 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 	glDisableVertexAttribArray(2);
 	glDisableVertexAttribArray(3);
 	glDisableVertexAttribArray(4);
+
+	glDeleteVertexArrays(1, &go->mesh->vao);
+	glDeleteBuffers(1, &go->mesh->vbo);
+	glDeleteBuffers(1, &go->mesh->ebo);
+
+
 
 }
 

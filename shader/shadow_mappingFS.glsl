@@ -12,9 +12,9 @@ in VS_OUT{
 } fs_in;
 
 
-uniform sampler2D diffuseTexture;
+uniform sampler2D texture_diffuse1;
 uniform sampler2D shadowMap;
-uniform sampler2D normalMap;
+uniform sampler2D texture_normal1;
 
 uniform vec4 lightPos;
 uniform vec3 viewPos;
@@ -62,11 +62,11 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 Normal)
 
 void main()
 {           
-    vec3 color = texture(diffuseTexture, fs_in.TexCoords * textureScale).rgb;
+    vec3 color = texture(texture_diffuse1, fs_in.TexCoords * textureScale).rgb;
     vec3 normal = normalize(fs_in.NormalPos);
     if (HaveNormalMap)
     {
-        normal = texture(normalMap, fs_in.TexCoords * textureScale).rgb;
+        normal = texture(texture_normal1, fs_in.TexCoords * textureScale).rgb;
         normal = normalize(normal * 2.0 - 1.0);
     }
     vec3 lightColor = vec3(1.0);
