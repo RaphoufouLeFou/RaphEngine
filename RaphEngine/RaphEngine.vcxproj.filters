@@ -139,5 +139,11 @@
     <None Include="..\shader\vertexShader.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="..\shader\DEBUG_FS.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\shader\DEBUG_VS.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

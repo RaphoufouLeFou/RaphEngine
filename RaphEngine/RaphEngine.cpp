@@ -20,7 +20,7 @@ void ExecuteStarts() {
 		GameObject* go = GameObject::SpawnedGameObjects[i];
 		//go->Init();
 		go->Start();
-
+		std::cout << "Started " << go->name << std::endl;
 	}
 }
 
@@ -55,10 +55,10 @@ void RaphEngine::Init(const char* windowTitle) {
 	RaphEngine::windowTitle = windowTitle;
 	SDL_Init(SDL_INIT_EVERYTHING);
 	Renderer::Init(false);
-	ExecuteStarts();
 }
 
 void RaphEngine::Run() {
+	ExecuteStarts();
 	MainLoop();
 }
 

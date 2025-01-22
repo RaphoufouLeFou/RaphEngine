@@ -63,7 +63,7 @@ public:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<Texture> textures;
-
+	unsigned int vao;
 	bool castShadows;
 	bool staticMesh;
 
@@ -72,15 +72,16 @@ public:
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+
 #ifdef RAPHENGINE_EXPORTS
 		GenerateBuffers();
-#endif
-	}
-#ifdef RAPHENGINE_EXPORTS
 
-	unsigned int vao, vbo, ebo;
+	}
+	unsigned int vbo, ebo;
 private:
 	void GenerateBuffers();
+#else
+	}
 #endif
 };
 

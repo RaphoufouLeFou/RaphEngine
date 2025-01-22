@@ -1,6 +1,20 @@
 #include "shaders.h"
 #include "pch.h"
 
+const char* DEBUG_FS_shader = R"(
+#version 330 core
+out vec4 FragColor;
+
+in vec2 TexCoords;
+
+uniform sampler2D texture_diffuse1;
+
+void main()
+{
+    FragColor = texture(texture_diffuse1, TexCoords);
+}
+)";
+
 const char* debug_quad_depth_FS_shader = R"(
 #version 330 core
 out vec4 FragColor;
@@ -37,6 +51,25 @@ void main()
 {
     TexCoords = aTexCoords;
     gl_Position = vec4(aPos, 1.0);
+}
+)";
+
+const char* DEBUG_VS_shader = R"(
+#version 330 core
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aTexCoords;
+
+out vec2 TexCoords;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+    TexCoords = aTexCoords;
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
 }
 )";
 
@@ -221,8 +254,8 @@ void main()
     float shadow = ShadowCalculation(fs_in.FragPosLightSpace, normal);
     vec3 lighting = (ambient + vec3(1 - shadow) * (diffuse + specular)) * color;
     
-    FragColor = vec4(lighting, 1.0);
-    //FragColor = vec4(1, 0, 0, 1);
+    //FragColor = vec4(lighting, 1.0);
+    FragColor = vec4(1, 0, 0, 1);
 }
 )";
 
@@ -270,7 +303,8 @@ void main()
     vs_out.TangentFragPos = TBN * vs_out.FragPos;
 
     vs_out.FragPosLightSpace = lightSpaceMatrix * vec4(vs_out.FragPos, 1.0);
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    //gl_Position = projection * view * model * vec4(aPos, 1.0);
+    gl_Position = vec4(10, 10, 10, 1.0);
 }
 )";
 

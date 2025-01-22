@@ -1,7 +1,9 @@
 #pragma once
 
+extern const char* DEBUG_FS_shader;
 extern const char* debug_quad_depth_FS_shader;
 extern const char* debug_quad_VS_shader;
+extern const char* DEBUG_VS_shader;
 extern const char* fragmentShader_shader;
 extern const char* imagesFS_shader;
 extern const char* imagesVS_shader;

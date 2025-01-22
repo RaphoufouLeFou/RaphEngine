@@ -11,6 +11,7 @@ std::vector<GameObject*> GameObject::SpawnedGameObjects =
 
 GameObject::GameObject() {
 	SpawnedGameObjects.push_back(this);
+	std::cout << "GameObject created" << std::endl;
 	transform = new Transform();
 	transform->position = Vector3 (0, 0, 0);
 	transform->rotation = Vector3(0, 0, 0);

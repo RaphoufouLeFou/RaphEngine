@@ -8,9 +8,9 @@
 
 #include "Vector.h"
 #include <vector>
+#include <string>
 #ifdef RAPHENGINE_EXPORTS
 #include "Shader.h"
-#include <string>
 #endif
 
 class Transform;
@@ -63,7 +63,7 @@ public:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<Texture> textures;
-
+	unsigned int vao;
 	bool castShadows;
 	bool staticMesh;
 
@@ -73,13 +73,15 @@ public:
 		this->indices = indices;
 		this->textures = textures;
 
-		GenerateBuffers();
-	}
 #ifdef RAPHENGINE_EXPORTS
+		GenerateBuffers();
 
-	unsigned int vao, vbo, ebo;
+	}
+	unsigned int vbo, ebo;
 private:
 	void GenerateBuffers();
+#else
+	}
 #endif
 };
 

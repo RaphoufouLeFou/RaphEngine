@@ -172,7 +172,7 @@ void Renderer::Init(bool fullScreen) {
 	Image::InitImageRendering();
 	glfwSwapInterval(0);
 
-	shader = new Shader(shadow_mappingVS_shader, shadow_mappingFS_shader);
+	shader = new Shader(DEBUG_VS_shader, DEBUG_FS_shader);
 	simpleDepthShader = new Shader(shadow_mapping_depthVS_shader, shadow_mapping_depthFS_shader);
 	debugDepthQuad = new Shader(debug_quad_VS_shader, debug_quad_depth_FS_shader);
 
@@ -354,11 +354,16 @@ Shader* BuildShader(const char* vertexPath, const char* fragmentPath) {
 
 void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 SunDir) {
 	int err = 0;
-
+	while ((err = glGetError()) != GL_NO_ERROR)
+	{
+		std::cout << "OpenGL error 0 : " << err << std::endl;
+	}
 	if (!go->mesh->castShadows && shadowRender)
 		return;
-
+	if(go->mesh->vertices.size() == 0)
+		return;
 	Shader* Objectshader = objShader == nullptr ? BuildShader(shadow_mappingVS_shader, shadow_mappingFS_shader) : objShader;
+	objShader = Objectshader;
 	Shader* shaderUse = sh == nullptr ? Objectshader : sh;
 	shaderUse->use();
 
@@ -373,7 +378,8 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 	*/
 	ModelMatrix = ModelMatrix * glm::toMat4(glm::quat(-Vector3ToVec3(go->transform->rotation)));
-	ModelMatrix = glm::scale(ModelMatrix, Vector3ToVec3(go->transform->scale));
+	go->transform->scale = Vector3(1, 1, 1);
+	ModelMatrix = glm::scale(ModelMatrix, glm::vec3(1,1,1));
 
 	shaderUse->setMat4("model", ModelMatrix);
 	// shaderUse->setMat4("MVP", MVP);
@@ -409,7 +415,6 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 	
-
 	shaderUse->setVec4("lightPos", glm::vec4(1, 1, 0, 0.0f));
 	shaderUse->setVec3("lightDir", Vector3(-SunDir.x, -SunDir.y, -SunDir.z));
 	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->position);
@@ -447,7 +452,7 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 	unsigned int specularNr = 1;
 	unsigned int normalNr = 1;
 	unsigned int heightNr = 1;
-	for (unsigned int i = 1; i < go->mesh->textures.size() + 1; i++)
+	for (unsigned int i = 0; i < go->mesh->textures.size(); i++)
 	{
 		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
 		// retrieve texture number (the N in diffuse_textureN)
@@ -468,10 +473,20 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 		glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
 	}
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
+	//glBindTexture(GL_TEXTURE_2D, depthMap);
+	glBindVertexArray(go->mesh->vao);
+	while ((err = glGetError()) != GL_NO_ERROR)
+	{
+		std::cout << "OpenGL error 1 : " << err << std::endl;
+	}
 
 	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(go->mesh->indices.size()), GL_UNSIGNED_INT, 0);
+	while ((err = glGetError()) != GL_NO_ERROR)
+	{
+		std::cout << "OpenGL error 2 : " << err << std::endl;
+	}
+	glBindVertexArray(0);
+	glActiveTexture(GL_TEXTURE0);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -734,8 +749,9 @@ void Renderer::StartFrameRender() {
 	glm::vec3 Ldir = glm::vec3(cos(lightRotation), -1, sin(lightRotation));
 
 	glm::vec3 lightDirNorm = glm::normalize(Ldir);
-	CalculateLights(lightDirNorm);
+	// CalculateLights(lightDirNorm);
 	// CalculateLights(glm::vec3(0, -1, -1));
+
 	glViewport(0, 0, *ResX, *ResY);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
