@@ -11,12 +11,7 @@ std::vector<GameObject*> GameObject::SpawnedGameObjects =
 
 GameObject::GameObject() {
 	SpawnedGameObjects.push_back(this);
-	std::cout << "GameObject created" << std::endl;
-	transform = new Transform();
-	transform->position = Vector3 (0, 0, 0);
-	transform->rotation = Vector3(0, 0, 0);
-	transform->scale = Vector3(1, 1, 1);
-	transform->gameObject = this;
+	transform = new Transform(this);
 	parent = nullptr;
 	children = nullptr;
 	activeSelf = true;
@@ -66,17 +61,51 @@ void Mesh::GenerateBuffers() {
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 }
 
+void Transform::RecalculateMatrix()
+{
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(position.x, position.y, position.z));
+	model = model * glm::toMat4(glm::quat(glm::vec3(rotation.x, rotation.y, rotation.z)));
+	model = glm::scale(model, glm::vec3(scale.x, scale.y, scale.z));
+	ModelMatrix = model;
+}
 
 void Transform::SetPosition(Vector3 position) {
 	this->position = position;
+	RecalculateMatrix();
 }
 
 void Transform::SetRotation(Vector3 rotation) {
 	this->rotation = rotation;
+	RecalculateMatrix();
 }
 
 void Transform::SetScale(Vector3 scale) {
 	this->scale = scale;
+	RecalculateMatrix();
+}
+
+Transform::Transform(GameObject* gameObject)
+{
+	this->gameObject = gameObject;
+	this->position = Vector3(0, 0, 0);
+	this->rotation = Vector3(0, 0, 0);
+	this->scale.x = 1;
+	this->scale.y = 1;
+	this->scale.z = 1;
+	RecalculateMatrix();
+}
+Vector3 Transform::GetPosition()
+{
+	return position;
+}
+Vector3 Transform::GetRotation()
+{
+	return rotation;
+}
+Vector3 Transform::GetScale()
+{
+	return scale;
 }
 
 Camera::Camera() : GameObject() {

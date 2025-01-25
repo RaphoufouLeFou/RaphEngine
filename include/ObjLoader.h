@@ -23,20 +23,20 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 
 class RAPHENGINE_API Model {
 public:
-    std::vector<Texture> textures_loaded;
+    static std::vector<Texture> textures_loaded;
     std::vector<Mesh>    meshes;
     std::string directory;
     bool gammaCorrection;
 
-    Model(std::string const& path, bool gamma = false) : gammaCorrection(gamma)
+    Model(std::string const& path, bool filter = true)
     {
-        loadModel(path);
+        loadModel(path, filter);
     }
 private:
-	void loadModel(std::string const& path);
+	void loadModel(std::string const& path, bool filter);
 #ifdef RAPHENGINE_EXPORTS
-	void processNode(aiNode* node, const aiScene* scene);
-	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
-	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+	void processNode(aiNode* node, const aiScene* scene, bool filter);
+	Mesh processMesh(aiMesh* mesh, const aiScene* scene, bool filter);
+	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, bool filter);
 #endif
 };

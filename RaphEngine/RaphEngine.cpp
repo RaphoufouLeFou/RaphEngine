@@ -20,7 +20,6 @@ void ExecuteStarts() {
 		GameObject* go = GameObject::SpawnedGameObjects[i];
 		//go->Init();
 		go->Start();
-		std::cout << "Started " << go->name << std::endl;
 	}
 }
 

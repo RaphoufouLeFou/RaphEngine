@@ -6,30 +6,14 @@
 #define RAPHENGINE_API __declspec(dllimport)
 #endif
 
-#ifdef RAPHENGINE_EXPORTS
 #include <glm.hpp>
-#endif
-
-class RAPHENGINE_API Vector3 {
-public:
-	float x, y, z;
-	Vector3(float x = 0, float y = 0, float z = 0) :
-		x(x), y(y), z(z) {}
-	Vector3 operator+(const Vector3& other);
-	Vector3 operator-(const Vector3& other);
-	Vector3 operator*(const Vector3& other);
-	Vector3 operator/(const Vector3& other);
-	Vector3 operator+=(const Vector3& other);
-
-	Vector3 operator+(const float& other);
-	Vector3 operator-(const float& other);
-	Vector3 operator*(const float& other);
-	Vector3 operator/(const float& other);
-	Vector3 operator+=(const float& other);
 #ifdef RAPHENGINE_EXPORTS
-	Vector3 operator=(const glm::vec3& other);
-	glm::vec3 operator=(const Vector3& other);
 #endif
+
+class RAPHENGINE_API Vector3 : public glm::vec3{
+public :
+	Vector3(float X = 0, float Y = 0, float Z = 0) :
+		glm::vec3(X, Y, Z) {}
 };
 
 class RAPHENGINE_API Vector2 {

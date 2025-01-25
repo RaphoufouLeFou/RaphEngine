@@ -72,24 +72,24 @@ void CalculateMat() {
 	// Camera matrix
 
 	glm::vec3 direction(
-		cos(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90)) * cos(DEG2RAD(RaphEngine::camera->transform->rotation.x)),
-		sin(DEG2RAD(RaphEngine::camera->transform->rotation.x)),
-		sin(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90)) * cos(DEG2RAD(RaphEngine::camera->transform->rotation.x))
+		cos(DEG2RAD(RaphEngine::camera->transform->GetRotation().y - 90)) * cos(DEG2RAD(RaphEngine::camera->transform->GetRotation().x)),
+		sin(DEG2RAD(RaphEngine::camera->transform->GetRotation().x)),
+		sin(DEG2RAD(RaphEngine::camera->transform->GetRotation().y - 90)) * cos(DEG2RAD(RaphEngine::camera->transform->GetRotation().x))
 	);
 
 	// printf("Direction: %f %f %f\n", direction.x, direction.y, direction.z);
 
 	glm::vec3 right = glm::vec3(
-		cos(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90) - PI / 2.0f),
+		cos(DEG2RAD(RaphEngine::camera->transform->GetRotation().y - 90) - PI / 2.0f),
 		0,
-		sin(DEG2RAD(RaphEngine::camera->transform->rotation.y - 90) - PI / 2.0f)
+		sin(DEG2RAD(RaphEngine::camera->transform->GetRotation().y - 90) - PI / 2.0f)
 	);
 
 	glm::vec3 up = glm::cross(right, direction);
 
 	ViewMatrix = glm::lookAt(
-		Vector3ToVec3(RaphEngine::camera->transform->position),
-		Vector3ToVec3(RaphEngine::camera->transform->position) + direction, // and looks here : at the same position, plus "direction"
+		Vector3ToVec3(RaphEngine::camera->transform->GetPosition()),
+		Vector3ToVec3(RaphEngine::camera->transform->GetPosition()) + direction, // and looks here : at the same position, plus "direction"
 		up                  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 
@@ -352,107 +352,54 @@ Shader* BuildShader(const char* vertexPath, const char* fragmentPath) {
 
 
 
-void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 SunDir) {
+void RenderGameObject(GameObject * go, Shader* shaderUse, bool shadowRender, glm::vec3 SunDir) {
 	int err = 0;
-	while ((err = glGetError()) != GL_NO_ERROR)
-	{
-		std::cout << "OpenGL error 0 : " << err << std::endl;
-	}
 	if (!go->mesh->castShadows && shadowRender)
 		return;
 	if(go->mesh->vertices.size() == 0)
 		return;
-	Shader* Objectshader = objShader == nullptr ? BuildShader(shadow_mappingVS_shader, shadow_mappingFS_shader) : objShader;
-	objShader = Objectshader;
-	Shader* shaderUse = sh == nullptr ? Objectshader : sh;
-	shaderUse->use();
 
-	shaderUse->setMat4("projection", ProjectionMatrix);
-	shaderUse->setMat4("view", ViewMatrix);
-
-	ModelMatrix = glm::mat4(1.0f);
-	ModelMatrix = glm::translate(ModelMatrix, Vector3ToVec3(go->transform->position));
-	/*
-	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.x), glm::vec3(1.0f, 0.0f, 0.0f)); 
-	ModelMatrix = glm::rotate(ModelMatrix, -(go->transform->rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	*/
-	ModelMatrix = ModelMatrix * glm::toMat4(glm::quat(-Vector3ToVec3(go->transform->rotation)));
-	go->transform->scale = Vector3(1, 1, 1);
-	ModelMatrix = glm::scale(ModelMatrix, glm::vec3(1,1,1));
-
-	shaderUse->setMat4("model", ModelMatrix);
-	// shaderUse->setMat4("MVP", MVP);
-
-	glGenVertexArrays(1, &go->mesh->vao);
-	glGenBuffers(1, &go->mesh->vbo);
-	glGenBuffers(1, &go->mesh->ebo);
-
-	glBindVertexArray(go->mesh->vao);
-	// load data into vertex buffers
-	glBindBuffer(GL_ARRAY_BUFFER, go->mesh->vbo);
-	// A great thing about structs is that their memory layout is sequential for all its items.
-	// The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
-	// again translates to 3/2 floats which translates to a byte array.
-	glBufferData(GL_ARRAY_BUFFER, go->mesh->vertices.size() * sizeof(Vertex), &go->mesh->vertices[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, go->mesh->ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, go->mesh->indices.size() * sizeof(unsigned int), &go->mesh->indices[0], GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	// vertex Positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	// vertex normals
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-	// vertex texture coords
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
-	// vertex tangent
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
-	// vertex bitangent
-	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
 	
-	shaderUse->setVec3("lightPos", Vector3(1, 3, 0));
-	shaderUse->setVec3("lightDir", Vector3(-SunDir.x, -SunDir.y, -SunDir.z));
-	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->position);
+	shaderUse->setMat4("model", go->transform->ModelMatrix);
+	// shaderUse->setMat4("MVP", MVP);
+	
+
 	//shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
 
-
-	Vector3 rotationVect = go->transform->rotation;
-	GameObject* parent = go->parent;
 	/*
+	Vector3 rotationVect = go->transform->GetRotation();
+	GameObject* parent = go->parent;
+	
 	while (parent != nullptr) {
 		rotationVect += parent->transform->rotation;
 		parent = parent->parent;
-	}*/
+	}
 
 	glm::mat3 rotation = glm::mat3(1.0);
 	rotation[0] = glm::vec3(cos((rotationVect.y)), 0, sin((rotationVect.y)));
 	rotation[1] = glm::vec3(0, 1, 0);
 	rotation[2] = glm::vec3(-sin((rotationVect.y)), 0, cos((rotationVect.y)));
 	
-	Vector3 position = go->transform->position;
+	Vector3 position = go->transform->GetPosition();
 	parent = go->parent;
-	/*
+
 	while (parent != nullptr) {
 		Vector3 newPos = ApplyRotation(parent->transform->position, parent->transform->rotation.y);
 		position += Vector3(newPos.x, newPos.y, newPos.z);
 		parent = parent->parent;
-	}
-	*/
+	}*/
 
-	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 	// -- shadow --
 	// bind appropriate textures
+
+	/*
 	unsigned int diffuseNr = 1;
 	unsigned int specularNr = 1;
 	unsigned int normalNr = 1;
 	unsigned int heightNr = 1;
-	for (unsigned int i = 0; i < go->mesh->textures.size(); i++)
+	unsigned int i = 0;
+	for (i = 0; i < go->mesh->textures.size(); i++)
 	{
 		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
 		// retrieve texture number (the N in diffuse_textureN)
@@ -472,39 +419,59 @@ void RenderGameObject(GameObject * go, Shader* sh, bool shadowRender, glm::vec3 
 		// and finally bind the texture
 		glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
 	}
-	shaderUse->setBool("HaveNormalMap", normalNr > 1);
+
+
+
+*/
+
+	const char * names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height" };
+	uint8_t typeCount[] = { 0, 0, 0, 0 };
+	for (unsigned int i = 0; i < go->mesh->textures.size(); i++)
+	{
+		for (unsigned int j = 0; j < 4; j++)
+		{
+			if (go->mesh->textures[i].type == names[j])
+			{
+				glActiveTexture(GL_TEXTURE0 + i);
+				shaderUse->setInt(names[j], i);
+				typeCount[j]++;
+				glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
+			}
+		}
+	}
+	shaderUse->setBool("HaveNormalMap", typeCount[2] >= 1);
+	shaderUse->setBool("HaveSpecularMap", typeCount[1] >= 1);
+	shaderUse->setBool("HaveHeightMap", typeCount[3] >= 1);
 
 	//glBindTexture(GL_TEXTURE_2D, depthMap);
 	glBindVertexArray(go->mesh->vao);
-	while ((err = glGetError()) != GL_NO_ERROR)
-	{
-		std::cout << "OpenGL error 1 : " << err << std::endl;
-	}
 
 	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(go->mesh->indices.size()), GL_UNSIGNED_INT, 0);
-	while ((err = glGetError()) != GL_NO_ERROR)
-	{
-		std::cout << "OpenGL error 2 : " << err << std::endl;
-	}
+
 	glBindVertexArray(0);
 	glActiveTexture(GL_TEXTURE0);
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
-	glDisableVertexAttribArray(3);
-	glDisableVertexAttribArray(4);
-
-	glDeleteVertexArrays(1, &go->mesh->vao);
-	glDeleteBuffers(1, &go->mesh->vbo);
-	glDeleteBuffers(1, &go->mesh->ebo);
-
-
 
 }
 
 void RenderObjects(Shader* sh, bool shadowRender, glm::vec3 lightDir) {
 	CalculateMat();
+
+	Shader* Objectshader = objShader == nullptr ? BuildShader(shadow_mappingVS_shader, shadow_mappingFS_shader) : objShader;
+	objShader = Objectshader;
+	Shader* shaderUse = sh == nullptr ? Objectshader : sh;
+
+	shaderUse->use();
+
+	shaderUse->setMat4("projection", ProjectionMatrix);
+	shaderUse->setMat4("view", ViewMatrix);
+
+	shaderUse->setVec3("lightPos", Vector3(-lightDir.x * 100, -lightDir.y * 100, -lightDir.z * 100));
+	shaderUse->setVec3("lightDir", Vector3(-lightDir.x, -lightDir.y, -lightDir.z));
+	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->GetPosition());
+
+	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	shaderUse->setFloat("heightScale", 0.1f);
+
 	for (GameObject* go : GameObject::SpawnedGameObjects) {
 		if(go->activeSelf && go->mesh)
 			RenderGameObject(go, sh, shadowRender, lightDir);
@@ -718,10 +685,10 @@ void CalculateLights(glm::vec3 lightDir)
 
 	//lightProjection = glm::perspective(glm::radians(165.f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
 	lightProjection = glm::ortho(-range * 1.5f, range * 1.5f, -range * 1.5f, range * 1.5f, near_plane, far_plane);
-	Vector3 pos = RaphEngine::camera->transform->position;
+	Vector3 pos = RaphEngine::camera->transform->GetPosition();
 	if (RaphEngine::Player != nullptr)
 	{
-		pos = RaphEngine::Player->transform->position;
+		pos = RaphEngine::Player->transform->GetPosition();
 	}
 	//std::cout << "Player pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
 	glm::vec3 lightPos(pos.x, pos.y, pos.z);// (-2.0f, 35.0f, -1.0f);

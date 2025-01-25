@@ -8,59 +8,103 @@ out vec4 FragColor;
 in VS_OUT{
     vec3 FragPos;
     vec2 TexCoords;
-    vec3 NormalPos;
     vec3 TangentLightPos;
     vec3 TangentViewPos;
     vec3 TangentFragPos;
 } fs_in;
 
-uniform sampler2D texture_diffuse1;
-uniform sampler2D texture_normal1;
+uniform sampler2D texture_diffuse;
+uniform sampler2D texture_specular;
+uniform sampler2D texture_normal;
+uniform sampler2D texture_height;
+
 
 uniform vec3 lightPos;
+uniform vec3 lightDir;
 uniform vec3 viewPos;
+uniform float heightScale;
 uniform bool HaveNormalMap;
+uniform bool HaveSpecularMap;
+uniform bool HaveHeightMap;
+
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
+{
+    if (!HaveHeightMap)
+        return texCoords;
+    // number of depth layers
+    const float minLayers = 8;
+    const float maxLayers = 32;
+    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));
+    // calculate the size of each layer
+    float layerDepth = 1.0 / numLayers;
+    // depth of current layer
+    float currentLayerDepth = 0.0;
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 P = viewDir.xy / viewDir.z * heightScale;
+    vec2 deltaTexCoords = P / numLayers;
+
+    // get initial values
+    vec2  currentTexCoords = texCoords;
+    float currentDepthMapValue = texture(texture_height, currentTexCoords).r;
+
+    while (currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        currentTexCoords -= deltaTexCoords;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = texture(texture_height, currentTexCoords).r;
+        // get depth of next layer
+        currentLayerDepth += layerDepth;
+    }
+
+    // get texture coordinates before collision (reverse operations)
+    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+    // get depth after and before collision for linear interpolation
+    float afterDepth = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = texture(texture_height, prevTexCoords).r - currentLayerDepth + layerDepth;
+
+    // interpolation of texture coordinates
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+    return finalTexCoords;
+}
+
 
 void main()
 {
-    // obtain normal from normal map in range [0,1]
-    vec3 normal = fs_in.NormalPos;
+    /*
+    // offset texture coordinates with Parallax Mapping
+   
+    vec2 texCoords = fs_in.TexCoords;
+
+    texCoords = ParallaxMapping(fs_in.TexCoords, viewDir);
+    if (texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
+        discard;
+    */
+    vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
+    vec3 normal = vec3(0.5, 0.5, 1.0);
     if (HaveNormalMap)
 	{
-		normal = texture(texture_normal1, fs_in.TexCoords).rgb;
-		normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
-
-        vec3 color = texture(texture_diffuse1, fs_in.TexCoords).rgb;
-        // ambient
-        vec3 ambient = 0.1 * color;
-        // diffuse
-        vec3 lightDir = normalize(fs_in.TangentLightPos - fs_in.TangentFragPos);
-        float diff = max(dot(lightDir, normal), 0.0);
-        vec3 diffuse = diff * color;
-        // specular
-        vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
-        vec3 reflectDir = reflect(-lightDir, normal);
-        vec3 halfwayDir = normalize(lightDir + viewDir);
-        float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-
-        vec3 specular = vec3(0.2) * spec;
-        FragColor = vec4(ambient + diffuse + specular, 1.0);
-        return;
+        normal = texture(texture_normal, fs_in.TexCoords).rgb;
 	}
+    normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
 
-    // get diffuse color
-    vec3 color = texture(texture_diffuse1, fs_in.TexCoords).rgb;
+    vec3 color = texture(texture_diffuse, fs_in.TexCoords).rgb;
     // ambient
     vec3 ambient = 0.1 * color;
     // diffuse
-    vec3 lightDir = normalize(lightPos - fs_in.FragPos);
-    float diff = max(dot(lightDir, normal), 0.0);
+    vec3 lightDir2 = normalize(fs_in.TangentLightPos - fs_in.TangentFragPos);
+    float diff = max(dot(lightDir2, normal), 0.0);
     vec3 diffuse = diff * color;
     // specular
-    vec3 viewDir = normalize(viewPos - fs_in.FragPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+    vec3 reflectDir = reflect(-lightDir2, normal);
+    vec3 halfwayDir = normalize(lightDir2 + viewDir);
+    float specFact = 1; 
+    if(HaveSpecularMap)
+        specFact = texture(texture_specular, fs_in.TexCoords).r;
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0) * specFact;
 
     vec3 specular = vec3(0.2) * spec;
     FragColor = vec4(ambient + diffuse + specular, 1.0);
@@ -117,7 +161,6 @@ layout(location = 4) in vec3 aBitangent;
 out VS_OUT{
     vec3 FragPos;
     vec2 TexCoords;
-    vec3 NormalPos;
     vec3 TangentLightPos;
     vec3 TangentViewPos;
     vec3 TangentFragPos;
@@ -132,9 +175,9 @@ uniform vec3 viewPos;
 
 void main()
 {
+    /*
     vs_out.FragPos = vec3(model * vec4(aPos, 1.0));
     vs_out.TexCoords = aTexCoords;
-    vs_out.NormalPos = aNormal;
 
     mat3 normalMatrix = transpose(inverse(mat3(model)));
     vec3 T = normalize(normalMatrix * aTangent);
@@ -143,6 +186,21 @@ void main()
     vec3 B = cross(N, T);
 
     mat3 TBN = transpose(mat3(T, B, N));
+    vs_out.TangentLightPos = TBN * lightPos;
+    vs_out.TangentViewPos = TBN * viewPos;
+    vs_out.TangentFragPos = TBN * vs_out.FragPos;
+
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    */
+
+    vs_out.FragPos = vec3(model * vec4(aPos, 1.0));
+    vs_out.TexCoords = aTexCoords;
+
+    vec3 T = normalize(mat3(model) * aTangent);
+    vec3 B = normalize(mat3(model) * aBitangent);
+    vec3 N = normalize(mat3(model) * aNormal);
+    mat3 TBN = transpose(mat3(T, B, N));
+
     vs_out.TangentLightPos = TBN * lightPos;
     vs_out.TangentViewPos = TBN * viewPos;
     vs_out.TangentFragPos = TBN * vs_out.FragPos;

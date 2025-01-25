@@ -10,7 +10,11 @@
 #include <vector>
 #include <string>
 #ifdef RAPHENGINE_EXPORTS
+#define GLM_ENABLE_EXPERIMENTAL
 #include "Shader.h"
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+#include <gtx/quaternion.hpp>
 #endif
 
 class Transform;
@@ -34,14 +38,23 @@ public:
 };
 
 class RAPHENGINE_API Transform {
-public:
+private:
 	Vector3 position;
 	Vector3 rotation;
 	Vector3 scale;
+	void RecalculateMatrix();
+public:
 	GameObject* gameObject;
+#ifdef RAPHENGINE_EXPORTS
+	glm::mat4 ModelMatrix;
+#endif
 	void SetPosition(Vector3 position);
 	void SetRotation(Vector3 rotation);
 	void SetScale(Vector3 scale);
+	Transform(GameObject* gameObject);
+	Vector3 GetPosition();
+	Vector3 GetRotation();
+	Vector3 GetScale();
 };
 
 struct RAPHENGINE_API Vertex {
