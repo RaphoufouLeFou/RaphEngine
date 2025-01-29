@@ -15,7 +15,9 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 	std::string filename = std::string(path);
 	if(directory != "")
 		filename = directory + '/' + filename;
-
+	int index = filename.find("Assets");
+	if (index != -1)
+		filename = filename.substr(index);
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
@@ -57,6 +59,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 		std::cout << "Texture failed to load at path: " << filename.c_str() << std::endl;
 		stbi_image_free(data);
 	}
+	std::cout << "Texture loaded at path: " << filename.c_str() << std::endl;
 
 	return textureID;
 }
