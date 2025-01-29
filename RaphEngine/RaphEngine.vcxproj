@@ -164,9 +164,11 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
     <ClInclude Include="include\Inputs.h" />
     <ClInclude Include="include\ObjLoader.h" />
     <ClInclude Include="include\RaphEngine.h" />
+    <ClInclude Include="include\RayCast.h" />
     <ClInclude Include="include\Renderer.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\Text.h" />
+    <ClInclude Include="include\UI.h" />
     <ClInclude Include="include\Vector.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="shader\shaders.h" />
@@ -184,10 +186,12 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RaphEngine.cpp" />
+    <ClCompile Include="RayCast.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="shader\shaders.cpp" />
     <ClCompile Include="stb_image.cpp" />
+    <ClCompile Include="UI.cpp" />
     <ClCompile Include="Vector.cpp" />
   </ItemGroup>
   <ItemGroup>

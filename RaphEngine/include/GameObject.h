@@ -26,11 +26,14 @@ public:
 	GameObject* parent;
 	GameObject** children;
 	const char* name;
-	Mesh* mesh;
+	const char* meshPath;
+	bool smoothTextures;
+	std::vector<Mesh> meshes;
 	bool activeSelf;
+	int layer;
 	GameObject();
 	~GameObject();
-	void Init();
+	void InitGO();
 	virtual void Start() {}
 	virtual void Update() {}
 
@@ -52,6 +55,7 @@ public:
 	void SetRotation(Vector3 rotation);
 	void SetScale(Vector3 scale);
 	Transform(GameObject* gameObject);
+	Transform();
 	Vector3 GetPosition();
 	Vector3 GetRotation();
 	Vector3 GetScale();
@@ -76,6 +80,12 @@ public:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<Texture> textures;
+	bool haveNormalMap;
+	bool haveSpecularMap;
+	bool haveHeightMap;
+#ifdef RAPHENGINE_EXPORTS
+	glm::mat4 ModelMatrix;
+#endif
 	unsigned int vao;
 	bool castShadows;
 	bool staticMesh;
@@ -85,6 +95,8 @@ public:
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+		castShadows = true;
+		staticMesh = false;
 
 #ifdef RAPHENGINE_EXPORTS
 		GenerateBuffers();

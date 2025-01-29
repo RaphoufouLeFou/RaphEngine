@@ -35,20 +35,23 @@ int* Renderer::ResY;
 
 Shader* textShader;
 
+std::string fontName;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	// make sure the viewport matches the new window dimensions
 	glViewport(0, 0, width, height);
 	*Renderer::ResX = width;
 	*Renderer::ResY = height;
+	Text::InitTextRendering(fontName);
 }
 
 void SetHints() {
 	glfwWindowHint(GLFW_SAMPLES, 8); // 8x antialiasing
 	glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE); // Maximizing window
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); // We want OpenGL 4.1
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
@@ -93,23 +96,48 @@ void CalculateMat() {
 		up                  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 
-
-	glm::mat4 Model = glm::mat4(1.0);
-	MVP = ProjectionMatrix * ViewMatrix * Model;
 }
 
-const int factor = 6 ;
+const int factor = 4 ;
 const unsigned int SHADOW_WIDTH = 1024 * factor, SHADOW_HEIGHT = 1024 * factor;
 unsigned int depthMapFBO;
 // create depth texture
 unsigned int depthMap;
 
+
 Shader *shader;
 Shader *simpleDepthShader;
 Shader *debugDepthQuad;
 
+#define SAMPLES_COUNT 2
+#define SAMPLE_SIZE ((SAMPLES_COUNT * 2 + 1) * (SAMPLES_COUNT * 2 + 1))
+Vector2 offsets[SAMPLE_SIZE];
 
-void Renderer::Init(bool fullScreen) {
+void Calc_offsets()
+{
+	for (int i = 0; i < SAMPLE_SIZE; i++)
+	{
+		float xNoise = (rand() % 100) / 100.0;
+		float yNoise = (rand() % 100) / 100.0;
+		offsets[i].x = xNoise;
+		offsets[i].y = yNoise;
+		std::cout << "Offset " << i << " is " << offsets[i].x << " " << offsets[i].y << std::endl;
+	}
+}
+
+glm::mat4 Renderer::GetProjectionMatrix()
+{
+	return ProjectionMatrix;
+}
+
+glm::mat4 Renderer::GetViewMatrix()
+{
+	return ViewMatrix;
+}
+
+void Renderer::Init(bool fullScreen, std::string font_name) {
+	fontName = font_name;
+	Calc_offsets();
 	if (!glfwInit()) {
 		std::cerr << "Failed to initialize GLFW" << std::endl;
 		exit(EXIT_FAILURE);
@@ -133,8 +161,8 @@ void Renderer::Init(bool fullScreen) {
 
 	glfwGetWindowSize(window, Renderer::ResX, Renderer::ResY);
 	glfwMakeContextCurrent(window); // Initialize GLEW
+
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	
 
 	glewExperimental = true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {
@@ -142,6 +170,8 @@ void Renderer::Init(bool fullScreen) {
 		exit(EXIT_FAILURE);
 		return;
 	}
+
+
 
 	// Ensure we can capture the escape key being pressed below
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -166,16 +196,18 @@ void Renderer::Init(bool fullScreen) {
 	glEnable(GL_LIGHTING);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	glEnable(GL_DEBUG_OUTPUT);
-	Text::InitTextRendering();
+
+	Text::InitTextRendering(fontName);
 	Image::InitImageRendering();
 	glfwSwapInterval(0);
+
+	TextUI* infos = new TextUI("alpha dev build : vA0.000.6", Vector3(0, 0, 0), Vector3(2, *ResY - 2, 0));
+	infos->transform->SetScale(Vector3(0.4, 0.4, 0.4));
 
 	shader = new Shader(DEBUG_VS_shader, DEBUG_FS_shader);
 	simpleDepthShader = new Shader(shadow_mapping_depthVS_shader, shadow_mapping_depthFS_shader);
 	debugDepthQuad = new Shader(debug_quad_VS_shader, debug_quad_depth_FS_shader);
-
 
 	glGenFramebuffers(1, &depthMapFBO);
 	glGenTextures(1, &depthMap);
@@ -230,10 +262,10 @@ void Image::InitImageRendering() {
 
 void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) {
 
-	float relativeX = (float)x / *Renderer::ResX - 1.0/2.0;
-	float relativeY = (float)y / *Renderer::ResY - 1.0/2.0;
-	float relativeSizeX = (float)sizeX / *Renderer::ResX;
-	float relativeSizeY = (float)sizeY / *Renderer::ResY;
+	float relativeX = (((float)x / (float)*Renderer::ResX) * 2 - 1);
+	float relativeY = -(((float)y / (float)*Renderer::ResY) * 2 - 1);
+	float relativeSizeX = (float)sizeX / *Renderer::ResX * 2;
+	float relativeSizeY = (float)sizeY / *Renderer::ResY * 2;
 
 	float vertices[] = {
 		relativeX                , relativeY + relativeSizeY, zIndex, 01, // left
@@ -286,10 +318,10 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 
 void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int zIndex) {
 
-	float relativeX = ((x / *Renderer::ResX) * 2 - 1);
-	float relativeY = ((y / *Renderer::ResY) * 2 - 1);
-	float relativeSizeX = (float)sizeX / *Renderer::ResX;
-	float relativeSizeY = (float)sizeY / *Renderer::ResY;
+	float relativeX = (((float)x / (float)*Renderer::ResX) * 2 - 1);
+	float relativeY = -(((float)y / (float)*Renderer::ResY) * 2 - 1);
+	float relativeSizeX = (float)sizeX / *Renderer::ResX * 2;
+	float relativeSizeY = (float)sizeY / *Renderer::ResY * 2;
 
 	float vertices[] = {
 		relativeX                , relativeY + relativeSizeY, zIndex, 01, // left
@@ -330,162 +362,11 @@ void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int 
 
 }
 
-Vector3 ApplyRotation(Vector3 vec, float rotation) {
-	Vector3 result;
-	result.x = vec.x * cos(rotation) - vec.z * sin(rotation);
-	result.y = vec.y;
-	result.z = vec.x * sin(rotation) + vec.z * cos(rotation);
-	return result;
-}
-
-glm::mat4 lightSpaceMatrix;
-
-Shader* objShader = nullptr;
-
-Shader* BuildShader(const char* vertexPath, const char* fragmentPath) {
-	Shader* shader = new Shader(vertexPath, fragmentPath);
-	if (shader == nullptr) {
-		std::cout << "Failed to build shader" << std::endl;
-	}
-	return shader;
-}
-
-
-
-void RenderGameObject(GameObject * go, Shader* shaderUse, bool shadowRender, glm::vec3 SunDir) {
-	int err = 0;
-	if (!go->mesh->castShadows && shadowRender)
-		return;
-	if(go->mesh->vertices.size() == 0)
-		return;
-
-	
-	shaderUse->setMat4("model", go->transform->ModelMatrix);
-	// shaderUse->setMat4("MVP", MVP);
-	
-
-	//shaderUse->setVec3Array("lightSettings", lightCount, lightSettings);
-
-	/*
-	Vector3 rotationVect = go->transform->GetRotation();
-	GameObject* parent = go->parent;
-	
-	while (parent != nullptr) {
-		rotationVect += parent->transform->rotation;
-		parent = parent->parent;
-	}
-
-	glm::mat3 rotation = glm::mat3(1.0);
-	rotation[0] = glm::vec3(cos((rotationVect.y)), 0, sin((rotationVect.y)));
-	rotation[1] = glm::vec3(0, 1, 0);
-	rotation[2] = glm::vec3(-sin((rotationVect.y)), 0, cos((rotationVect.y)));
-	
-	Vector3 position = go->transform->GetPosition();
-	parent = go->parent;
-
-	while (parent != nullptr) {
-		Vector3 newPos = ApplyRotation(parent->transform->position, parent->transform->rotation.y);
-		position += Vector3(newPos.x, newPos.y, newPos.z);
-		parent = parent->parent;
-	}*/
-
-
-	// -- shadow --
-	// bind appropriate textures
-
-	/*
-	unsigned int diffuseNr = 1;
-	unsigned int specularNr = 1;
-	unsigned int normalNr = 1;
-	unsigned int heightNr = 1;
-	unsigned int i = 0;
-	for (i = 0; i < go->mesh->textures.size(); i++)
-	{
-		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
-		// retrieve texture number (the N in diffuse_textureN)
-		std::string number;
-		std::string name = go->mesh->textures[i].type;
-		if (name == "texture_diffuse")
-			number = std::to_string(diffuseNr++);
-		else if (name == "texture_specular")
-			number = std::to_string(specularNr++); // transfer unsigned int to string
-		else if (name == "texture_normal")
-			number = std::to_string(normalNr++); // transfer unsigned int to string
-		else if (name == "texture_height")
-			number = std::to_string(heightNr++); // transfer unsigned int to string
-
-		// now set the sampler to the correct texture unit
-		shaderUse->setInt((name + number).c_str(), i);
-		// and finally bind the texture
-		glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
-	}
-
-
-
-*/
-
-	const char * names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height" };
-	uint8_t typeCount[] = { 0, 0, 0, 0 };
-	for (unsigned int i = 0; i < go->mesh->textures.size(); i++)
-	{
-		for (unsigned int j = 0; j < 4; j++)
-		{
-			if (go->mesh->textures[i].type == names[j])
-			{
-				glActiveTexture(GL_TEXTURE0 + i);
-				shaderUse->setInt(names[j], i);
-				typeCount[j]++;
-				glBindTexture(GL_TEXTURE_2D, go->mesh->textures[i].id);
-			}
-		}
-	}
-	shaderUse->setBool("HaveNormalMap", typeCount[2] >= 1);
-	shaderUse->setBool("HaveSpecularMap", typeCount[1] >= 1);
-	shaderUse->setBool("HaveHeightMap", typeCount[3] >= 1);
-
-	//glBindTexture(GL_TEXTURE_2D, depthMap);
-	glBindVertexArray(go->mesh->vao);
-
-	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(go->mesh->indices.size()), GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
-	glActiveTexture(GL_TEXTURE0);
-
-}
-
-void RenderObjects(Shader* sh, bool shadowRender, glm::vec3 lightDir) {
-	CalculateMat();
-
-	Shader* Objectshader = objShader == nullptr ? BuildShader(shadow_mappingVS_shader, shadow_mappingFS_shader) : objShader;
-	objShader = Objectshader;
-	Shader* shaderUse = sh == nullptr ? Objectshader : sh;
-
-	shaderUse->use();
-
-	shaderUse->setMat4("projection", ProjectionMatrix);
-	shaderUse->setMat4("view", ViewMatrix);
-
-	shaderUse->setVec3("lightPos", Vector3(-lightDir.x * 100, -lightDir.y * 100, -lightDir.z * 100));
-	shaderUse->setVec3("lightDir", Vector3(-lightDir.x, -lightDir.y, -lightDir.z));
-	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->GetPosition());
-
-	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-	shaderUse->setFloat("heightScale", 0.1f);
-
-	for (GameObject* go : GameObject::SpawnedGameObjects) {
-		if(go->activeSelf && go->mesh)
-			RenderGameObject(go, sh, shadowRender, lightDir);
-	}
-}
-
-bool Renderer::IsKeyPressed(KeyCode key) {
-	return glfwGetKey(window, (int)key) == GLFW_PRESS;
-}
 
 std::map<GLchar, Character> Characters;
 unsigned int VAO, VBO;
 
-void Text::InitTextRendering() {
+void Text::InitTextRendering(std::string font_name) {
 	textShader = new Shader(textVS_shader, textFS_shader);
 	glm::mat4 projection = glm::ortho(0.0f, (float)(*Renderer::ResX), 0.0f, (float)(*Renderer::ResY));
 	textShader->use();
@@ -500,7 +381,6 @@ void Text::InitTextRendering() {
 		return;
 	}
 
-	std::string font_name = "Assets/Fonts/Pixellari.ttf";
 	if (font_name.empty())
 	{
 		std::cout << "ERROR::FREETYPE: Failed to load font_name" << std::endl;
@@ -600,14 +480,14 @@ void Text::RenderText(const char* text, float x, float y, float scale, Vector3 c
 		char c = text[i];
 		if (c == '\n')
 		{
-			y -= 20;
+			y += 20;
 			CurrentX = x;
 			continue;
 		}
 		Character ch = Characters[c];
 
 		float xpos = CurrentX + ch.Bearing.x * scale;
-		float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+		float ypos = (*Renderer::ResY - y) - (ch.Size.y - ch.Bearing.y) * scale;
 
 		float w = ch.Size.x * scale;
 		float h = ch.Size.y * scale;
@@ -642,7 +522,7 @@ void Text::RenderText(const char* text, float x, float y, float scale, Vector3 c
 	glBindVertexArray(VertexArrayID);
 
 	glDisableVertexAttribArray(0);
-	
+
 }
 
 unsigned int quadVAO = 0;
@@ -674,9 +554,152 @@ void renderQuad()
 	glBindVertexArray(0);
 }
 
+Vector3 ApplyRotation(Vector3 vec, float rotation) {
+	Vector3 result;
+	result.x = vec.x * cos(rotation) - vec.z * sin(rotation);
+	result.y = vec.y;
+	result.z = vec.x * sin(rotation) + vec.z * cos(rotation);
+	return result;
+}
+
+glm::mat4 lightSpaceMatrix;
+
+Shader* objShader = nullptr;
+
+Shader* BuildShader(const char* vertexPath, const char* fragmentPath) {
+	Shader* shader = new Shader(vertexPath, fragmentPath);
+	if (shader == nullptr) {
+		std::cout << "Failed to build shader" << std::endl;
+	}
+	return shader;
+}
+
+GLFWwindow* Renderer::GetWindow() {
+	return window;
+}
+
+void RenderGameObject(Mesh * mesh, Shader* shaderUse, glm::vec3 SunDir) {
+	int err = 0;
+
+	if(mesh->vertices.size() == 0)
+		return;
+
+	//const char * names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height" };
+	for (int i = 0; i < mesh->textures.size(); i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		//shaderUse->setInt(mesh->textures[i].type.c_str(), i);
+		glBindTexture(GL_TEXTURE_2D, mesh->textures[i].id);
+	}
+
+	shaderUse->setBool("HaveNormalMap", mesh->haveNormalMap);
+	shaderUse->setBool("HaveSpecularMap", mesh->haveSpecularMap);
+	shaderUse->setBool("HaveHeightMap", mesh->haveHeightMap);
+
+	//glBindTexture(GL_TEXTURE_2D, depthMap);
+	glBindVertexArray(mesh->vao);
+
+	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+
+	//glBindVertexArray(0);
+	//glActiveTexture(GL_TEXTURE0);
+
+}
+
+void RenderGameObjectShadow(Mesh* mesh, Shader* shaderUse) {
+	if (mesh->vertices.size() == 0)
+		return;
+	if (!mesh->castShadows)
+		return;
+	
+
+	glBindVertexArray(mesh->vao);
+
+	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+
+	//glBindVertexArray(0);
+	//glActiveTexture(GL_TEXTURE0);
+}
+
+
+
+void RenderObjects(Shader* sh, glm::vec3 lightDir) {
+	CalculateMat();
+
+	Shader* shaderUse = sh;
+
+	shaderUse->use();
+
+	shaderUse->setMat4("projection", ProjectionMatrix);
+	shaderUse->setMat4("view", ViewMatrix);
+
+	shaderUse->setVec3("lightPos", Vector3(-lightDir.x * 100, -lightDir.y * 100, -lightDir.z * 100));
+	shaderUse->setVec3("lightDir", Vector3(-lightDir.x, -lightDir.y, -lightDir.z));
+	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->GetPosition());
+
+	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+	shaderUse->setFloat("heightScale", 0.1f);
+
+	for(int i = 0; i < SAMPLE_SIZE; i++)
+	{
+
+		std::string name = "offsets[" + std::to_string(i) + "]";
+		glUniform2f(glGetUniformLocation(shaderUse->ID, name.c_str()), offsets[i].x, offsets[i].y);
+	}
+
+	//shaderUse->setVec2Array("offsets", 64, offsets);
+
+	const char* names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height", "shadowMap" };
+	for (int i = 0; i < 5; i++)
+	{
+		shaderUse->setInt(names[i], i);
+	}
+
+
+	glActiveTexture(GL_TEXTURE4);
+	shaderUse->setInt("shadowMap", 4);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+
+	for (GameObject* go : GameObject::SpawnedGameObjects) {
+		if (go->activeSelf)
+		{
+			shaderUse->setMat4("model", go->transform->ModelMatrix /* + mesh->ModelMatrix*/);
+
+			int count = go->meshes.size();
+			for (int i = 0; i < count; i++)
+			{
+				RenderGameObject(&go->meshes[i], sh, lightDir);
+			}
+		}
+	}
+}
+
+
+void RenderObjectsShadows(Shader* sh) {
+	sh->use();
+
+	for (GameObject* go : GameObject::SpawnedGameObjects) {
+		if (go->activeSelf)
+		{
+			sh->setMat4("model", go->transform->ModelMatrix /* + mesh->ModelMatrix*/);
+
+			int count = go->meshes.size();
+			for (int i = 0; i < count; i++)
+			{
+				RenderGameObjectShadow(&go->meshes[i], sh);
+			}
+		}
+	}
+}
+
+
+bool Renderer::IsKeyPressed(KeyCode key) {
+	return glfwGetKey(window, (int)key) == GLFW_PRESS;
+}
+
 void CalculateLights(glm::vec3 lightDir)
 {
-	float range = 50.0f;
+	float range = 10.0f;
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
 	glm::mat4 lightProjection, lightView;
@@ -710,7 +733,7 @@ void CalculateLights(glm::vec3 lightDir)
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	//glCullFace(GL_FRONT);
-	RenderObjects(simpleDepthShader, true, glm::vec3(0.f));
+	RenderObjectsShadows(simpleDepthShader);
 	//glCullFace(GL_BACK); // don't forget to reset original culling face
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -719,19 +742,22 @@ void CalculateLights(glm::vec3 lightDir)
 
 void Renderer::StartFrameRender() {
 
-	float lightRotation = Time::GetTime() / 1000.0f;
+	float lightRotation = 64; //Time::GetTime() / 1000.0f;
 	glm::vec3 Ldir = glm::vec3(cos(lightRotation), -1, sin(lightRotation));
 
 	glm::vec3 lightDirNorm = glm::normalize(Ldir);
-	// CalculateLights(lightDirNorm);
+	CalculateLights(lightDirNorm);
 	// CalculateLights(glm::vec3(0, -1, -1));
+
 
 	glViewport(0, 0, *ResX, *ResY);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	// Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
+
 	//Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
-	RenderObjects(shader, false, lightDirNorm);
+	RenderObjects(shader, lightDirNorm);
 
 	/*
 	debugDepthQuad->use();
@@ -744,15 +770,13 @@ void Renderer::StartFrameRender() {
 	//glBindTexture(GL_TEXTURE_2D, Texture);
 	glBindTexture(GL_TEXTURE_2D, depthMap);*/
 
-	// Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
 	// renderQuad();
 }
 
 bool Renderer::RenderFrame() {
 
 	// text rendering
-	Text::RenderText("alpha dev build : vA0.000.4", 2, 2, 0.4f, Vector3(0, 0, 0));
-
+	UIElement::DrawAllUI();
 	
 
 	glfwSwapBuffers(window);

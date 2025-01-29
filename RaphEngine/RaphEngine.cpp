@@ -18,7 +18,7 @@ void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
 	{
 		GameObject* go = GameObject::SpawnedGameObjects[i];
-		//go->Init();
+		go->InitGO();
 		go->Start();
 	}
 }
@@ -40,6 +40,7 @@ void MainLoop() {
 
 		double start = Time::GetTime();
 		Renderer::StartFrameRender();
+		ButtonUI::CheckAllClicks(Inputs::GetMousePos());
 		ExecuteUpdates();
 		bool shouldNotClose = Renderer::RenderFrame();
 		if (!shouldNotClose) {
@@ -50,10 +51,10 @@ void MainLoop() {
 	}
 }
 
-void RaphEngine::Init(const char* windowTitle) {
+void RaphEngine::Init(const char* windowTitle, std::string font_name) {
 	RaphEngine::windowTitle = windowTitle;
 	SDL_Init(SDL_INIT_EVERYTHING);
-	Renderer::Init(false);
+	Renderer::Init(false, font_name);
 }
 
 void RaphEngine::Run() {

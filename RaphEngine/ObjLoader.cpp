@@ -92,7 +92,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 	return textures;
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter)
+Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::mat4 ModelMat)
 {
 	// data to fill
 	std::vector<Vertex> vertices;
@@ -168,8 +168,15 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter)
 	std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height", filter);
 	textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
+	Mesh mesh1(vertices, indices, textures);
+	mesh1.ModelMatrix = ModelMat;
+	mesh1.haveNormalMap = normalMaps.size() > 0;
+	mesh1.haveSpecularMap = specularMaps.size() > 0;
+	mesh1.haveHeightMap = heightMaps.size() > 0;
+
+
 	// return a mesh object created from the extracted mesh data
-	return Mesh(vertices, indices, textures);
+	return mesh1;
 }
 
 void Model::processNode(aiNode* node, const aiScene* scene, bool filter)
@@ -180,7 +187,11 @@ void Model::processNode(aiNode* node, const aiScene* scene, bool filter)
 		// the node object only contains indices to index the actual objects in the scene. 
 		// the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.push_back(processMesh(mesh, scene, filter));
+		glm::mat4 model = glm::mat4(1.0f);
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				model[i][j] = node->mTransformation[i][j];
+		meshes.push_back(processMesh(mesh, scene, filter, model));
 	}
 	// after we've processed all of the meshes (if any) we then recursively process each of the children nodes
 	for (unsigned int i = 0; i < node->mNumChildren; i++)

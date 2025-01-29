@@ -14,16 +14,23 @@ GameObject::GameObject() {
 	transform = new Transform(this);
 	parent = nullptr;
 	children = nullptr;
+	layer = 0;
 	activeSelf = true;
-	mesh = nullptr;
+	meshPath = nullptr;
+	smoothTextures = true;
 	name = "new GameObject";
 }
 
 GameObject::~GameObject() {
 	delete transform;
-	delete mesh;
 }
 
+void GameObject::InitGO() {
+	if(meshPath == nullptr)
+		return;
+	Model* model = new Model(meshPath, smoothTextures);
+	meshes = model->meshes;
+}
 
 void Mesh::GenerateBuffers() {
 
@@ -95,6 +102,17 @@ Transform::Transform(GameObject* gameObject)
 	this->scale.z = 1;
 	RecalculateMatrix();
 }
+
+Transform::Transform()
+{
+	this->gameObject = nullptr;
+	this->position = Vector3(0, 0, 0);
+	this->rotation = Vector3(0, 0, 0);
+	this->scale.x = 1;
+	this->scale.y = 1;
+	this->scale.z = 1;
+}
+
 Vector3 Transform::GetPosition()
 {
 	return position;

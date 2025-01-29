@@ -13,6 +13,8 @@
 #include "Text.h"
 #include "Images.h"
 #include "Inputs.h"
+#include "UI.h"
+#include "RayCast.h"
 
 typedef char byte;
 
@@ -27,7 +29,7 @@ class RaphEngine
 public:
 	static RAPHENGINE_API GameObject *Player;
 	static const char* windowTitle;
-	static RAPHENGINE_API void Init(const char* windowTitle);
+	static RAPHENGINE_API void Init(const char* windowTitle, std::string font_name);
 	static RAPHENGINE_API void Run();
 	static RAPHENGINE_API void GetWindowSize(int* x, int* y);
 

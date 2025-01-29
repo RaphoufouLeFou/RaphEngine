@@ -36,7 +36,7 @@ private:
 	void loadModel(std::string const& path, bool filter);
 #ifdef RAPHENGINE_EXPORTS
 	void processNode(aiNode* node, const aiScene* scene, bool filter);
-	Mesh processMesh(aiMesh* mesh, const aiScene* scene, bool filter);
+	Mesh processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::mat4 ModelMat);
 	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, bool filter);
 #endif
 };

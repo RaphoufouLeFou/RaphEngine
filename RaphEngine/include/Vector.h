@@ -16,25 +16,8 @@ public :
 		glm::vec3(X, Y, Z) {}
 };
 
-class RAPHENGINE_API Vector2 {
-public:
-	float x, y;
-	Vector2(float x = 0, float y = 0) :
-		x(x), y(y) {}
-	Vector2 operator+(const Vector2& other);
-	Vector2 operator-(const Vector2& other);
-	Vector2 operator*(const Vector2& other);
-	Vector2 operator/(const Vector2& other);
-	Vector2 operator+=(const Vector2& other);
-
-	Vector2 operator+(const float& other);
-	Vector2 operator-(const float& other);
-	Vector2 operator*(const float& other);
-	Vector2 operator/(const float& other);
-	Vector2 operator+=(const float& other);
-
-#ifdef RAPHENGINE_EXPORTS
-	Vector2 operator=(const glm::vec2& other);
-	glm::vec2 operator=(const Vector2& other);
-#endif
+class RAPHENGINE_API Vector2 : public glm::vec2 {
+public:	
+	Vector2(float X = 0, float Y = 0) :
+		glm::vec2(X, Y) {}
 };

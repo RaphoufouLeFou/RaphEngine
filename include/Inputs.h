@@ -136,8 +136,7 @@ public :
 
     static bool IsKeyPressed(KeyCode key);
 	static bool IsMouseButtonPressed(int button);
-	static double GetMouseX();
-	static double GetMouseY();
+	static Vector2 GetMousePos();
 	static double GetMouseScroll();
 	static void SetMousePosition(double x, double y);
 

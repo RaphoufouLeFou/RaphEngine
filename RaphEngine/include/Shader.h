@@ -26,6 +26,7 @@ public:
     void setFloatArray(const char* name, int count, float *value) const;
     void setVec2(const char* name, const Vector2 value) const;
     void setVec2(const char* name, float x, float y) const;
+    void setVec2Array(const char* name, int count, const Vector2* value) const;
     void setVec3(const char* name, const Vector3 value) const;
     void setVec3Array(const char* name, int count, const Vector3 *value) const;
     void setVec3(const char* name, float x, float y, float z) const;

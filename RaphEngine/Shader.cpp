@@ -69,6 +69,10 @@ void Shader::setVec2(const char* name, float x, float y) const
 {
     glUniform2f(glGetUniformLocation(ID, name), x, y);
 }
+void Shader::setVec2Array(const char* name, int count, const Vector2* value) const
+{
+    glUniform2fv(glGetUniformLocation(ID, name), count, &value->x);
+}
 // ------------------------------------------------------------------------
 void Shader::setVec3(const char* name, const Vector3 value) const
 {

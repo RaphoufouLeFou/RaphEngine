@@ -8,22 +8,15 @@ bool Inputs::IsKeyPressed(KeyCode key) {
 	return isPressed;
 }
 bool Inputs::IsMouseButtonPressed(int button){
-	const Uint32 state = SDL_GetMouseState(NULL, NULL);
-	if (state & SDL_BUTTON(button)) {
-		return true;
-	}
-	return false;
+	return glfwGetMouseButton(Renderer::GetWindow(), button);
 }
-double Inputs::GetMouseX(){
-	int x;
-	SDL_GetMouseState(&x, NULL);
-	return x;
+Vector2 Inputs::GetMousePos(){
+	double x, y;
+	//SDL_GetMouseState(&x, &y);
+	glfwGetCursorPos(Renderer::GetWindow(), &x, &y);
+	return Vector2(x, y);
 }
-double Inputs::GetMouseY(){
-	int y;
-	SDL_GetMouseState(NULL, &y);
-	return y;
-}
+
 double Inputs::GetMouseScroll(){
 	return 0;
 }

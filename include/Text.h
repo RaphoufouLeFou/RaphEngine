@@ -5,6 +5,6 @@
 
 class RAPHENGINE_API Text {
 public:
-	static void InitTextRendering();
+	static void InitTextRendering(std::string font_name);
 	static void RenderText(const char* text, float x, float y, float scale, Vector3 color);
 };
