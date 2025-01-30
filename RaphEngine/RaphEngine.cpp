@@ -14,6 +14,11 @@ GameObject* RaphEngine::Player = nullptr;
 
 double Time::deltaTime = 0.0f;
 
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
 	{
@@ -47,6 +52,7 @@ void MainLoop() {
 			Close();
 			break;
 		}
+		//if()
 		Time::deltaTime = (Time::GetTime() - start) / 1000.0;
 	}
 }

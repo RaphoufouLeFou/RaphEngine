@@ -24,8 +24,6 @@ SDL_Surface* loadSurface(const char* path) {
 	static std::map<const char*, SDL_Surface*> Surfaces;
 
 	if (Surfaces.find(path) == Surfaces.end()) {
-
-
 		SDL_Surface* surface = IMG_Load(path);
 		if (surface == NULL) {
 			std::cout << "Error loading image: " << path << std::endl;

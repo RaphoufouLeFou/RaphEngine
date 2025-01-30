@@ -95,12 +95,29 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 	return textures;
 }
 
+glm::vec4 CalculateInfluenceSphere(std::vector<Vertex> vertices, int verticesCount) {
+	glm::vec3 center = glm::vec3(0.0f);
+	for (int i = 0; i < verticesCount; i++) {
+		center += glm::vec3(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z);
+	}
+	center /= verticesCount;
+	float radius = 0.0f;
+	for (int i = 0; i < verticesCount; i++) {
+		float distance = glm::distance2(center, glm::vec3(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z));
+		if (distance > radius) {
+			radius = distance;
+		}
+	}
+	return glm::vec4(center, radius);
+}
+
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::mat4 ModelMat)
 {
 	// data to fill
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<Texture> textures;
+	vertices.reserve(mesh->mNumVertices);
 
 	// walk through each of the mesh's vertices
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -177,6 +194,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::ma
 	mesh1.haveSpecularMap = specularMaps.size() > 0;
 	mesh1.haveHeightMap = heightMaps.size() > 0;
 
+	glm::vec4 infSphere = CalculateInfluenceSphere(vertices, mesh->mNumVertices);
+	mesh1.InfSpehereCenter = glm::vec3(infSphere.x, infSphere.y, infSphere.z);
+	mesh1.InfSphereRadius = infSphere.w;
 
 	// return a mesh object created from the extracted mesh data
 	return mesh1;

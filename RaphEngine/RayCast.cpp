@@ -74,6 +74,16 @@ bool ray_intersects_triangle(const vec3& ray_origin,
         return false;
 }
 
+bool InInfluenceSphere(vec3 rayOrigin, vec3 rayDirection, vec3 center, float radius)
+{
+	vec3 oc = center - rayOrigin;
+    float a = dot(rayDirection, rayDirection);
+    float b = 2.0f * dot(rayDirection, oc);
+    float c = dot(oc, oc) - radius * radius;
+    float discriminant = b * b - 4 * a * c;
+    return (discriminant > 0);
+}
+
 bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersection_point, vec3& out_normal, GameObject** objOut, int layer)
 {
     vec3 oldIntersectionPoint;
@@ -86,11 +96,16 @@ bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersec
         if (obj->layer != layer)
             continue;
         int meshCount = obj->meshes.size();
+        mat4 model = obj->transform->ModelMatrix;
         for (int j = 0; j < meshCount; j++)
         {
 			Mesh mesh = obj->meshes[j];
+            vec3 Scale = obj->transform->GetScale();
+            float maxScale = max(max(Scale.x, Scale.y), Scale.z);
+            if(!InInfluenceSphere(origin, direction, model * vec4(mesh.InfSpehereCenter, 1), maxScale * mesh.InfSphereRadius))
+                continue;
 			int triCount = mesh.indices.size() / 3;
-            mat4 model = obj->transform->ModelMatrix;
+            
             for (int k = 0; k < triCount; k++)
             {
 				triangle objTri;

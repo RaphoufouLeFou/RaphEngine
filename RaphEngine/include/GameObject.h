@@ -85,6 +85,8 @@ public:
 	bool haveHeightMap;
 #ifdef RAPHENGINE_EXPORTS
 	glm::mat4 ModelMatrix;
+	glm::vec3 InfSpehereCenter;
+	float InfSphereRadius;
 #endif
 	unsigned int vao;
 	bool castShadows;

@@ -72,7 +72,7 @@ void Transform::RecalculateMatrix()
 {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(position.x, position.y, position.z));
-	model = model * glm::toMat4(glm::quat(glm::vec3(rotation.x, rotation.y, rotation.z)));
+	model = model * glm::toMat4(glm::quat(rotation));
 	model = glm::scale(model, glm::vec3(scale.x, scale.y, scale.z));
 	ModelMatrix = model;
 }
