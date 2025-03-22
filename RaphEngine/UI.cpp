@@ -100,3 +100,17 @@ void UIElement::DrawAllUI()
 	}
 }
 
+bool UIPanel::LoadPanels(std::string Path)
+{
+	// TODO
+}
+
+UIElement UIPanel::GetElement(int id)
+{
+	return Elements[id];
+}
+
+UIElement UIPanel::GetElement(std::string name)
+{
+	return Elements[NameToIndexes[name]];
+}

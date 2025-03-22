@@ -2,7 +2,7 @@
 
 #include "RaphEngine.h"
 #include <functional>
-
+#include <map>
 
 class RAPHENGINE_API UIElement
 {
@@ -51,4 +51,17 @@ public:
 
 private:
 	std::function<void()> onClick;
+};
+
+class RAPHENGINE_API UIPanel
+{
+public:
+	static bool LoadPanels(std::string Path);
+	static UIElement GetElement(int id);
+	static UIElement GetElement(std::string name);
+	bool PanelActive = true;
+
+private:
+	static std::vector<UIElement> Elements;
+	static std::map<std::string, int> NameToIndexes;
 };
