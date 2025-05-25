@@ -86,6 +86,7 @@ bool InInfluenceSphere(vec3 rayOrigin, vec3 rayDirection, vec3 center, float rad
 
 bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersection_point, vec3& out_normal, GameObject** objOut, int layer)
 {
+    
     vec3 oldIntersectionPoint;
     bool haveCollision = false;
 
@@ -97,23 +98,26 @@ bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersec
             continue;
         int meshCount = obj->meshes.size();
         mat4 model = obj->transform->ModelMatrix;
+        mat4 InvModel = glm::inverse(model);
+        vec3 LocalOrigin = InvModel * vec4(origin, 1);
         for (int j = 0; j < meshCount; j++)
         {
 			Mesh mesh = obj->meshes[j];
             vec3 Scale = obj->transform->GetScale();
             float maxScale = max(max(Scale.x, Scale.y), Scale.z);
-            if(!InInfluenceSphere(origin, direction, model * vec4(mesh.InfSpehereCenter, 1), maxScale * mesh.InfSphereRadius))
+            if(!InInfluenceSphere(LocalOrigin, direction, model * vec4(mesh.InfSpehereCenter, 1), maxScale * mesh.InfSphereRadius))
                 continue;
 			int triCount = mesh.indices.size() / 3;
             
             for (int k = 0; k < triCount; k++)
             {
 				triangle objTri;
-                objTri.a = model * vec4(mesh.vertices[mesh.indices[k * 3]].Position, 1);
-                objTri.b = model * vec4(mesh.vertices[mesh.indices[k * 3 + 1]].Position, 1);
-                objTri.c = model * vec4(mesh.vertices[mesh.indices[k * 3 + 2]].Position, 1);
-                if (!ray_intersects_triangle(origin, direction, objTri, out_intersection_point))
+                objTri.a = mesh.vertices[mesh.indices[k * 3]].Position; //model * vec4(mesh.vertices[mesh.indices[k * 3]].Position, 1);
+                objTri.b = mesh.vertices[mesh.indices[k * 3 + 1]].Position; //model * vec4(mesh.vertices[mesh.indices[k * 3 + 1]].Position, 1);
+                objTri.c = mesh.vertices[mesh.indices[k * 3 + 2]].Position; //model * vec4(mesh.vertices[mesh.indices[k * 3 + 2]].Position, 1);
+                if (!ray_intersects_triangle(LocalOrigin, direction, objTri, out_intersection_point))
                     continue;
+                out_intersection_point = model * vec4(out_intersection_point, 1);
                 if (haveCollision == false || distance2(out_intersection_point, origin) < distance2(oldIntersectionPoint, origin))
                 {
 					oldIntersectionPoint = out_intersection_point;

@@ -4,6 +4,8 @@
 
 std::vector<UIElement*> UIElement::Elements;
 std::vector<ButtonUI*> ButtonUI::Buttons;
+std::vector<UIElement> UIPanel::Elements;
+std::map<std::string, int> UIPanel::NameToIndexes;
 
 void TextUI::DrawUI()
 {
@@ -102,7 +104,9 @@ void UIElement::DrawAllUI()
 
 bool UIPanel::LoadPanels(std::string Path)
 {
+	Path = Path + "UI/";
 	// TODO
+	return false;
 }
 
 UIElement UIPanel::GetElement(int id)

@@ -1,15 +1,28 @@
 #pragma once
-
-#ifdef RAPHENGINE_EXPORTS
-#define RAPHENGINE_API __declspec(dllexport)
-#else
-#define RAPHENGINE_API __declspec(dllimport)
-#endif
-
+#include "LibManager.h"
+#ifdef _WIN32
 #include <glm.hpp>
+#else
+#include <glm/glm.hpp>
+#endif
 #ifdef RAPHENGINE_EXPORTS
 #endif
 
+
+typedef glm::vec4 Vector4;
+typedef glm::vec3 Vector3;
+typedef glm::vec2 Vector2;
+
+typedef glm::mat2 Matrix2;
+typedef glm::mat3 Matrix3;
+typedef glm::mat4 Matrix4;
+
+
+Matrix4 GetRotationMatrix(Vector3 rotation);
+
+
+
+/*
 class RAPHENGINE_API Vector3 : public glm::vec3{
 public :
 	Vector3(float X = 0, float Y = 0, float Z = 0) :
@@ -21,3 +34,4 @@ public:
 	Vector2(float X = 0, float Y = 0) :
 		glm::vec2(X, Y) {}
 };
+*/

@@ -1,0 +1,27 @@
+#pragma once
+
+extern const char* a10_debug_cascade_VS_shader;
+extern const char* Map_VS_shader;
+extern const char* a10_shadow_mapping_VS_shader;
+extern const char* DEBUG_FS_shader;
+extern const char* imagesFS_shader;
+extern const char* textVS_shader;
+extern const char* a10_debug_cascade_FS_shader;
+extern const char* Map_FS_shader;
+extern const char* a10_shadow_mapping_depth_GS_shader;
+extern const char* fragmentShader_shader;
+extern const char* debug_quad_depth_FS_shader;
+extern const char* a10_debug_quad_depth_FS_shader;
+extern const char* imagesVS_shader;
+extern const char* DEBUG_VS_shader;
+extern const char* shadow_mapping_depthVS_shader;
+extern const char* a10_shadow_mapping_depth_VS_shader;
+extern const char* a10_shadow_mapping_FS_shader;
+extern const char* vertexShader_shader;
+extern const char* textFS_shader;
+extern const char* shadow_mappingVS_shader;
+extern const char* a10_shadow_mapping_depth_FS_shader;
+extern const char* shadow_mappingFS_shader;
+extern const char* shadow_mapping_depthFS_shader;
+extern const char* debug_quad_VS_shader;
+extern const char* a10_debug_quad_VS_shader;

@@ -1,13 +1,19 @@
 #pragma once
 
+#ifdef _WIN32
 #include <gl/glew.h>
 #include <GLFW/glfw3.h>
 #include <GL/GL.h>
 #include <glm.hpp>
-
+#else
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <GL/gl.h>
+#include <glm/glm.hpp>
+#endif
 
 #include "include/Vector.h"
-#include "../shader/shaders.h"
+#include "shaders.h"
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -17,7 +23,7 @@ class Shader
 {
 public:
     unsigned int ID;
-    Shader(const char* vShaderCode, const char* fShaderCode);
+    Shader(const char* vShaderCode, const char* fShaderCode, const char* gShaderCode = nullptr);
     void use();
     void setBool(const char* name, bool value) const;
     void setInt(const char* name, int value) const;

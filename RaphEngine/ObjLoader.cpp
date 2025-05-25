@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "include/ObjLoader.h"
+#include "include/ImageLoader.h"
 #include <string>
 
 #include <fstream>
@@ -21,8 +22,10 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
+
 	int width, height, nrComponents;
 	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
+
 	if (data)
 	{
 		GLenum format;
@@ -51,7 +54,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-
+		std::cout << "Texture loaded at path: " << filename.c_str() << std::endl;
 		stbi_image_free(data);
 	}
 	else
@@ -59,9 +62,22 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 		std::cout << "Texture failed to load at path: " << filename.c_str() << std::endl;
 		stbi_image_free(data);
 	}
-	std::cout << "Texture loaded at path: " << filename.c_str() << std::endl;
 
 	return textureID;
+}
+
+
+ImageData* Model::LoadImage(const char* path)
+{
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+	ImageData* image = new ImageData();
+	image->width = width;
+	image->height = height;
+	image->data = data;
+	image->channels = nrComponents;
+	return image;
+
 }
 
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, bool filter)
@@ -111,12 +127,19 @@ glm::vec4 CalculateInfluenceSphere(std::vector<Vertex> vertices, int verticesCou
 	return glm::vec4(center, radius);
 }
 
+void Mesh::CalculateInflence()
+{
+	Vector4 infSphere = CalculateInfluenceSphere(this->vertices, this->vertices.size());
+	this->InfSpehereCenter = glm::vec3(infSphere.x, infSphere.y, infSphere.z);
+	this->InfSphereRadius = infSphere.w;
+}
+
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::mat4 ModelMat)
 {
 	// data to fill
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-	std::vector<Texture> textures;
+	std::vector<Vertex> vertices = std::vector<Vertex>();
+	std::vector<unsigned int> indices = std::vector<unsigned int>();
+	std::vector<Texture> textures = std::vector<Texture>();
 	vertices.reserve(mesh->mNumVertices);
 
 	// walk through each of the mesh's vertices
@@ -193,7 +216,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::ma
 	mesh1.haveNormalMap = normalMaps.size() > 0;
 	mesh1.haveSpecularMap = specularMaps.size() > 0;
 	mesh1.haveHeightMap = heightMaps.size() > 0;
-
+	
 	glm::vec4 infSphere = CalculateInfluenceSphere(vertices, mesh->mNumVertices);
 	mesh1.InfSpehereCenter = glm::vec3(infSphere.x, infSphere.y, infSphere.z);
 	mesh1.InfSphereRadius = infSphere.w;

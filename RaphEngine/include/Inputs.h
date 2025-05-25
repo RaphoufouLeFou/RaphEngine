@@ -5,6 +5,13 @@
 #define SCANCODE_MASK (1<<30)
 #define SCANCODE_TO_KEYCODE(X)  (X | SCANCODE_MASK)
 
+enum class MouseButton
+{
+    LEFT = 0,
+    MIDDLE = 2,
+    RIGHT = 1,
+};
+
 enum class KeyCode // From SDL2 for compatibility
 {
     KEY_SPACE = 32,
@@ -135,10 +142,11 @@ class RAPHENGINE_API Inputs
 public :
 
     static bool IsKeyPressed(KeyCode key);
-	static bool IsMouseButtonPressed(int button);
+	static bool IsMouseButtonPressed(MouseButton button);
 	static Vector2 GetMousePos();
 	static double GetMouseScroll();
 	static void SetMousePosition(double x, double y);
+    static void SetMouseVisibility(bool visible);
 
 };
 

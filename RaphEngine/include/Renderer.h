@@ -2,7 +2,11 @@
 
 #include "RaphEngine.h"
 #include "Shader.h"
+#ifdef _WIN32
 #include <glm.hpp>
+#else
+#include <glm/glm.hpp>
+#endif
 
 class Renderer {
 public:

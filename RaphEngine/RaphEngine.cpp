@@ -3,6 +3,7 @@
 #include <utility>
 #include <limits.h>
 #define SDL_MAIN_HANDLED
+
 #include "SDL.h"
 #include "include/RaphEngine.h"
 #include "include/Renderer.h"
@@ -13,11 +14,6 @@ Camera* RaphEngine::camera = new Camera();
 GameObject* RaphEngine::Player = nullptr;
 
 double Time::deltaTime = 0.0f;
-
-extern "C" {
-	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
 
 void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)

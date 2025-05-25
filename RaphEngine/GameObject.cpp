@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "include/GameObject.h"
-#include "include/imageLoader.h"
+//#include "include/imageLoader.h"
 #include "include/RaphEngine.h"
 
 
@@ -14,6 +14,7 @@ GameObject::GameObject() {
 	transform = new Transform(this);
 	parent = nullptr;
 	children = nullptr;
+	meshes = std::vector<Mesh>();
 	layer = 0;
 	activeSelf = true;
 	meshPath = nullptr;
@@ -26,11 +27,68 @@ GameObject::~GameObject() {
 }
 
 void GameObject::InitGO() {
-	if(meshPath == nullptr)
+	if(meshPath == nullptr || meshPath == "")
 		return;
 	Model* model = new Model(meshPath, smoothTextures);
-	meshes = model->meshes;
+	meshes.insert(meshes.end(), model->meshes.begin(), model->meshes.end());
 }
+
+void Mesh::ReclaculateNormals() {
+
+	int triCount = indices.size() / 3;
+	int vertexCount = vertices.size();
+
+	printf("Recalculating normals for %d vertices and %d triangles\n", vertexCount, triCount);
+
+	for (int i = 0; i < vertexCount; i++)
+	{
+		vertices[i].Normal = Vector3(0, 0, 0);
+		vertices[i].Tangent = Vector3(0, 0, 0);
+		vertices[i].Bitangent = Vector3(0, 0, 0);
+	}
+
+	for(int i = 0; i < triCount; i++)
+	{
+		Vertex *v1 = &vertices[indices[i * 3 + 0]];
+		Vertex *v2 = &vertices[indices[i * 3 + 1]];
+		Vertex *v3 = &vertices[indices[i * 3 + 2]];
+
+		Vector3 edge1 = v2->Position - v3->Position;
+		Vector3 edge2 = v2->Position - v1->Position;
+
+		Vector3 normal = glm::normalize(glm::cross(edge1, edge2));
+
+		glm::vec2 deltaUV1 = v3->TexCoords - v1->TexCoords;
+		glm::vec2 deltaUV2 = v2->TexCoords - v1->TexCoords;
+
+		float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+		glm::vec3 tangent, bitangent;
+
+		tangent = f * (deltaUV2.y * edge1 - deltaUV1.y * edge2);
+		bitangent = f * (-deltaUV2.x * edge1 + deltaUV1.x * edge2);
+
+		v1->Normal += normal;
+		v2->Normal += normal;
+		v3->Normal += normal;
+
+		v1->Tangent += tangent;
+		v2->Tangent += tangent;
+		v3->Tangent += tangent;
+
+		v1->Bitangent += bitangent;
+		v2->Bitangent += bitangent;
+		v3->Bitangent += bitangent;
+	}
+
+	for (int i = 0; i < vertexCount; i++)
+	{
+		vertices[i].Normal = glm::normalize(vertices[i].Normal);
+		vertices[i].Tangent = glm::normalize(vertices[i].Tangent);
+		vertices[i].Bitangent = glm::normalize(vertices[i].Bitangent);
+	}
+}
+
 
 void Mesh::GenerateBuffers() {
 
@@ -72,7 +130,7 @@ void Transform::RecalculateMatrix()
 {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(position.x, position.y, position.z));
-	model = model * glm::toMat4(glm::quat(rotation));
+	model = model * glm::toMat4(glm::quat(glm::radians(rotation)));
 	model = glm::scale(model, glm::vec3(scale.x, scale.y, scale.z));
 	ModelMatrix = model;
 }
@@ -127,7 +185,7 @@ Vector3 Transform::GetScale()
 }
 
 Camera::Camera() : GameObject() {
-	fov = 60.0f;
+	fov = 45.0f;
 	nearPlane = 0.1f;
-	farPlane = 1000.0f;
+	farPlane = 20000.0f;
 }

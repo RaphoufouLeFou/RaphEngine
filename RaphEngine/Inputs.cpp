@@ -7,8 +7,8 @@ bool Inputs::IsKeyPressed(KeyCode key) {
 	bool isPressed = Renderer::IsKeyPressed(key);
 	return isPressed;
 }
-bool Inputs::IsMouseButtonPressed(int button){
-	return glfwGetMouseButton(Renderer::GetWindow(), button);
+bool Inputs::IsMouseButtonPressed(MouseButton button){
+	return glfwGetMouseButton(Renderer::GetWindow(), (int)button);
 }
 Vector2 Inputs::GetMousePos(){
 	double x, y;
@@ -21,6 +21,13 @@ double Inputs::GetMouseScroll(){
 	return 0;
 }
 void Inputs::SetMousePosition(double x, double y){
-	SDL_WarpMouseInWindow(NULL, x, y);
+	glfwSetCursorPos(Renderer::GetWindow(), x, y);
 }
 
+void Inputs::SetMouseVisibility(bool visible)
+{
+	if(visible)
+		glfwSetInputMode(Renderer::GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	else
+		glfwSetInputMode(Renderer::GetWindow(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+}

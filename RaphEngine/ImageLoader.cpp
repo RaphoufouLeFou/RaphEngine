@@ -106,4 +106,3 @@ GLuint ImageLoader::LoadImageGL(const char* path, bool smooth) {
 
 	return tex;
 }
-

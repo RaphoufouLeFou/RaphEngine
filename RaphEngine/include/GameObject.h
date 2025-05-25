@@ -1,10 +1,5 @@
 #pragma once
-
-#ifdef RAPHENGINE_EXPORTS
-#define RAPHENGINE_API __declspec(dllexport)
-#else
-#define RAPHENGINE_API __declspec(dllimport)
-#endif
+#include "LibManager.h"
 
 #include "Vector.h"
 #include <vector>
@@ -12,11 +7,16 @@
 #ifdef RAPHENGINE_EXPORTS
 #define GLM_ENABLE_EXPERIMENTAL
 #include "Shader.h"
+#ifdef _WIN32
 #include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 #include <gtx/quaternion.hpp>
+#else
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
 #endif
-
+#endif
 class Transform;
 class Mesh;
 
@@ -29,6 +29,7 @@ public:
 	const char* meshPath;
 	bool smoothTextures;
 	std::vector<Mesh> meshes;
+	std::vector<Mesh> colliders;
 	bool activeSelf;
 	int layer;
 	GameObject();
@@ -83,33 +84,36 @@ public:
 	bool haveNormalMap;
 	bool haveSpecularMap;
 	bool haveHeightMap;
-#ifdef RAPHENGINE_EXPORTS
-	glm::mat4 ModelMatrix;
-	glm::vec3 InfSpehereCenter;
+
+	Matrix4 ModelMatrix;
+	Vector3 InfSpehereCenter;
 	float InfSphereRadius;
-#endif
+
 	unsigned int vao;
 	bool castShadows;
 	bool staticMesh;
 
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
+	void ReclaculateNormals();
+	void CalculateInflence();
+
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, bool autoNormal = false)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+
+		if(autoNormal)
+			ReclaculateNormals();
+
 		castShadows = true;
 		staticMesh = false;
 
-#ifdef RAPHENGINE_EXPORTS
 		GenerateBuffers();
 
 	}
 	unsigned int vbo, ebo;
 private:
 	void GenerateBuffers();
-#else
-	}
-#endif
 };
 
 class RAPHENGINE_API Camera : public GameObject {

@@ -1,10 +1,5 @@
 #pragma once
-
-#ifdef RAPHENGINE_EXPORTS
-#define RAPHENGINE_API __declspec(dllexport)
-#else
-#define RAPHENGINE_API __declspec(dllimport)
-#endif
+#include "LibManager.h"
 
 #include <vector>
 #include <string>
@@ -19,10 +14,20 @@
 #include <assimp/postprocess.h>
 #endif
 
+typedef struct ImageData
+{
+    unsigned char* data;
+    int width;
+    int height;
+    int channels;
+} ImageData;
+
 unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma);
+
 
 class RAPHENGINE_API Model {
 public:
+    static ImageData * LoadImage(const char* path);
     static std::vector<Texture> textures_loaded;
     std::vector<Mesh>    meshes;
     std::string directory;
@@ -30,6 +35,7 @@ public:
 
     Model(std::string const& path, bool filter = true)
     {
+        meshes = std::vector<Mesh>();
         loadModel(path, filter);
     }
 private:
