@@ -84,7 +84,17 @@ bool InInfluenceSphere(vec3 rayOrigin, vec3 rayDirection, vec3 center, float rad
     return (discriminant > 0);
 }
 
-bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersection_point, vec3& out_normal, GameObject** objOut, int layer)
+
+
+vec3 GetNewDirection(vec3 origin, vec3 LocalOrigin, vec3 direction, mat4 InvModel)
+{
+    vec3 DirectionPoint = origin + direction;
+    vec3 TransformedDirPoint = InvModel * vec4(DirectionPoint, 1);
+    vec3 NewDirection = TransformedDirPoint - LocalOrigin;
+    return glm::normalize(NewDirection);
+}
+
+bool haveCollision(vec3 origin, vec3 direction, vec3& out_intersection_point, vec3& out_normal, GameObject** objOut, int layer)
 {
     
     vec3 oldIntersectionPoint;
@@ -96,17 +106,23 @@ bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersec
 		GameObject* obj = GameObject::SpawnedGameObjects[i];
         if (obj->layer != layer)
             continue;
-        int meshCount = obj->meshes.size();
+        if (obj->colliders.size() == 0)
+            continue;
+        if (obj->activeSelf == false)
+            continue;
+        int meshCount = obj->colliders.size();
         mat4 model = obj->transform->ModelMatrix;
         mat4 InvModel = glm::inverse(model);
         vec3 LocalOrigin = InvModel * vec4(origin, 1);
+        vec3 LocalDirection = GetNewDirection(origin, LocalOrigin ,direction, InvModel);
         for (int j = 0; j < meshCount; j++)
         {
-			Mesh mesh = obj->meshes[j];
+			Mesh mesh = obj->colliders[j];
             vec3 Scale = obj->transform->GetScale();
             float maxScale = max(max(Scale.x, Scale.y), Scale.z);
-            if(!InInfluenceSphere(LocalOrigin, direction, model * vec4(mesh.InfSpehereCenter, 1), maxScale * mesh.InfSphereRadius))
+            if(!InInfluenceSphere(LocalOrigin, LocalDirection, model * vec4(mesh.InfSpehereCenter, 1), maxScale * mesh.InfSphereRadius))
                 continue;
+            
 			int triCount = mesh.indices.size() / 3;
             
             for (int k = 0; k < triCount; k++)
@@ -115,7 +131,7 @@ bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersec
                 objTri.a = mesh.vertices[mesh.indices[k * 3]].Position; //model * vec4(mesh.vertices[mesh.indices[k * 3]].Position, 1);
                 objTri.b = mesh.vertices[mesh.indices[k * 3 + 1]].Position; //model * vec4(mesh.vertices[mesh.indices[k * 3 + 1]].Position, 1);
                 objTri.c = mesh.vertices[mesh.indices[k * 3 + 2]].Position; //model * vec4(mesh.vertices[mesh.indices[k * 3 + 2]].Position, 1);
-                if (!ray_intersects_triangle(LocalOrigin, direction, objTri, out_intersection_point))
+                if (!ray_intersects_triangle(LocalOrigin, LocalDirection, objTri, out_intersection_point))
                     continue;
                 out_intersection_point = model * vec4(out_intersection_point, 1);
                 if (haveCollision == false || distance2(out_intersection_point, origin) < distance2(oldIntersectionPoint, origin))
@@ -128,6 +144,7 @@ bool haveCollision(vec3 origin, vec3 direction, triangle tri, vec3& out_intersec
 			}
 		}
 	}
+    out_intersection_point = oldIntersectionPoint;
     return haveCollision;
 }
 
@@ -149,7 +166,7 @@ bool RayCast::FromPoint(Vector3 origin, Vector3 direction, RayInfo* OutRayInfo, 
     vec3 intersectionPoint;
     vec3 normal;
     GameObject* objOut = nullptr;
-    if (haveCollision(origin, direction, triangle(), intersectionPoint, normal, &objOut, layer))
+    if (haveCollision(origin, direction, intersectionPoint, normal, &objOut, layer))
     {
 		OutRayInfo->hitPoint.x = intersectionPoint.x;
         OutRayInfo->hitPoint.y = intersectionPoint.y;

@@ -48,7 +48,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 		}
 		else
 		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 
@@ -134,6 +134,27 @@ void Mesh::CalculateInflence()
 	this->InfSphereRadius = infSphere.w;
 }
 
+std::string Mat4ToString(glm::mat4 mat)
+{
+    std::string str;
+    str += "mat4(";
+    for (int i = 0; i < 4; ++i)
+    {
+        str += "\n\t";
+        for (int j = 0; j < 4; ++j)
+        {
+            str += std::to_string(mat[i][j]);
+            if (j != 3)
+            {
+                str += ", ";
+            }
+        }
+        str += "\n";
+    }
+    str += ")";
+    return str;
+}
+
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::mat4 ModelMat)
 {
 	// data to fill
@@ -213,6 +234,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::ma
 
 	Mesh mesh1(vertices, indices, textures);
 	mesh1.ModelMatrix = ModelMat;
+	printf("Generated model matix:\n%s\n", Mat4ToString(ModelMat).c_str());
 	mesh1.haveNormalMap = normalMaps.size() > 0;
 	mesh1.haveSpecularMap = specularMaps.size() > 0;
 	mesh1.haveHeightMap = heightMaps.size() > 0;

@@ -12,6 +12,7 @@ class Renderer {
 public:
 	static int* ResX;
 	static int* ResY;
+	static std::vector<std::string> skyboxTextures;
 	static void Init(bool fullScreen, std::string font_name);
 	static bool IsKeyPressed(KeyCode key);
 	static void StartFrameRender();
@@ -20,6 +21,7 @@ public:
 	static void UpdateLogoGL(const char* newLogoPath);
 	static glm::mat4 GetProjectionMatrix();
 	static glm::mat4 GetViewMatrix();
+	static void SetShadowResolution(Settings::QualitySettings Quality);
 };
 
 

@@ -1,9 +1,21 @@
 #include "pch.h"
 #include "include/Shader.h"
 
+#ifdef _WIN32
+#include <gl/glew.h>
+#include <GLFW/glfw3.h>
+#include <GL/GL.h>
+#include <glm.hpp>
+#else
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <GL/gl.h>
+#include <glm/glm.hpp>
+#endif
 
 // constructor generates the shader on the fly
 
+std::vector<Shader*> Shader::LoadedShaders = std::vector<Shader*>();
 
 Shader::Shader(const char* vShaderCode, const char* fShaderCode, const char* gShaderCode)
 {
@@ -41,9 +53,10 @@ Shader::Shader(const char* vShaderCode, const char* fShaderCode, const char* gSh
     glDeleteShader(vertex);
     glDeleteShader(fragment);
     if(gShaderCode != nullptr)
-        glDeleteShader(geometry);
-
+		glDeleteShader(geometry);
+    Shader::LoadedShaders.push_back(this);
 }
+
 
 // activate the shader
 // ------------------------------------------------------------------------

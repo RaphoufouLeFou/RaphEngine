@@ -15,6 +15,13 @@ GameObject* RaphEngine::Player = nullptr;
 
 double Time::deltaTime = 0.0f;
 
+#ifdef _WIN32_
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;
+}
+#endif
+
 void ExecuteStarts() {
 	for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
 	{

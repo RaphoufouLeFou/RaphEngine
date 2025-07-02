@@ -11,6 +11,8 @@
 #include "UI.h"
 #include "RayCast.h"
 #include "Guizmo.h"
+#include "Shader.h"
+#include "Settings.h"
 
 typedef char byte;
 
@@ -24,6 +26,7 @@ class RaphEngine
 {
 public:
 	static void PassShaderVector3(char* name, Vector3 value);
+	static void SetSkyBox(std::vector<std::string> skyboxTextures);
 	static RAPHENGINE_API GameObject *Player;
 	static RAPHENGINE_API void Init(const char* windowTitle, std::string font_name);
 	static RAPHENGINE_API void Run();
@@ -31,10 +34,8 @@ public:
 	static RAPHENGINE_API void UpdateLogo(const char * newLogoPath);
 	static RAPHENGINE_API Camera* camera;
 
-#ifdef RAPHENGINE_EXPORTS
 	static std::vector<void (*)()> Starts;
 	static std::vector<void (*)()> Updates;
 	static const char* windowTitle;
-#endif
 
 };

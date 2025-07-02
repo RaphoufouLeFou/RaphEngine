@@ -12,9 +12,10 @@
 #include <glm/glm.hpp>
 #endif
 
-#include "include/Vector.h"
+#include "Vector.h"
 #include "shaders.h"
 #include <string>
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -36,12 +37,13 @@ public:
     void setVec3(const char* name, const Vector3 value) const;
     void setVec3Array(const char* name, int count, const Vector3 *value) const;
     void setVec3(const char* name, float x, float y, float z) const;
-    void setVec4(const char* name, const glm::vec4& value) const;
+    void setVec4(const char* name, const Vector4& value) const;
     void setVec4(const char* name, float x, float y, float z, float w);
-    void setMat2(const char* name, const glm::mat2& mat) const;
-    void setMat3(const char* name, const glm::mat3& mat) const;
-    void setMat4(const char* name, const glm::mat4& mat) const;
+    void setMat2(const char* name, const Matrix2& mat) const;
+    void setMat3(const char* name, const Matrix3& mat) const;
+    void setMat4(const char* name, const Matrix4& mat) const;
+    static std::vector<Shader*> LoadedShaders;
 
 private:
-    void checkCompileErrors(GLuint shader, std::string type);
+    void checkCompileErrors(unsigned int shader, std::string type);
 };

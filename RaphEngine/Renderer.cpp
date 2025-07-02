@@ -5,6 +5,8 @@
 #include "include/Text.h"
 #include "include/Images.h"
 #include <iostream>
+#include <math.h>
+#include <random>
 
 
 #include <ft2build.h>
@@ -41,12 +43,13 @@ glm::mat4 MVP = glm::mat4(1.0f);
 GLFWwindow* window;
 int* Renderer::ResX;
 int* Renderer::ResY;
+std::vector<std::string> Renderer::skyboxTextures;
 
 Shader* textShader;
 
 std::string fontName;
 
-std::vector<float> shadowCascadeLevels{ 500.0f, 80.0f, 30.0f, 4.0f };
+std::vector<float> shadowCascadeLevels{ 500.0f, 100.0f, 30.0f, 4.0f };
 //std::vector<float> shadowCascadeLevels{50.0f, 25.0f, 10.0f, 2.0f };
 
 std::vector<glm::mat4> lightMatricesCache;
@@ -54,7 +57,7 @@ std::vector<glm::mat4> lightMatricesCache;
 int debugLayer = 0;
 bool showQuad = false;
 
-glm::vec3 lightDirGlobal = glm::normalize(glm::vec3(-2, -5, -1.f));
+glm::vec3 lightDirGlobal = glm::normalize(glm::vec3(-2.5f, -2.5f, -2.0f));
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -74,14 +77,6 @@ void SetHints() {
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
-}
-
-glm::vec3 Vector3ToVec3(Vector3 vec) {
-	return glm::vec3(vec.x, vec.y, vec.z);
-}
-
-glm::vec2 Vector2ToVec2(Vector2 vec) {
-	return glm::vec2(vec.x, vec.y);
 }
 
 void CalculateMat() {
@@ -114,15 +109,17 @@ void CalculateMat() {
 
 }
 
-const int factor = 1 ;
-const unsigned int SHADOW_WIDTH = 1024 * factor, SHADOW_HEIGHT = 1024 * factor;
+const int factor = 4 ;
+unsigned int SHADOW_WIDTH = 1024 * factor, SHADOW_HEIGHT = 1024 * factor;
 unsigned int depthMapFBO;
 // create depth texture
 unsigned int depthMap;
 
 
 Shader *shader;
+Shader *skyboxShader;
 Shader *simpleDepthShader;
+Shader *simpleDepthShaderInstancied;
 Shader *debugDepthQuad;
 Shader *debugCascadeShader;
 
@@ -130,12 +127,20 @@ Shader *debugCascadeShader;
 #define SAMPLE_SIZE ((SAMPLES_COUNT * 2 + 1) * (SAMPLES_COUNT * 2 + 1))
 Vector2 offsets[SAMPLE_SIZE];
 
+
+float jitter()
+{
+    static std::default_random_engine generator;
+    static std::uniform_real_distribution<float> distrib(-0.5f, 0.5f);
+    return distrib(generator);
+}
+
 void Calc_offsets()
 {
 	for (int i = 0; i < SAMPLE_SIZE; i++)
 	{
-		float xNoise = (rand() % 100) / 100.0;
-		float yNoise = (rand() % 100) / 100.0;
+		float xNoise = jitter();
+		float yNoise = jitter();
 		offsets[i].x = xNoise;
 		offsets[i].y = yNoise;
 		//std::cout << "Offset " << i << " is " << offsets[i].x << " " << offsets[i].y << std::endl;
@@ -153,6 +158,69 @@ glm::mat4 Renderer::GetViewMatrix()
 }
 
 unsigned int matricesUBO;
+
+void GenerateShadowBuffer()
+{
+	glGenFramebuffers(1, &depthMapFBO);
+
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, depthMap);
+    glTexImage3D(
+        GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F, SHADOW_WIDTH, SHADOW_HEIGHT, int(shadowCascadeLevels.size()) + 1,
+        0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+
+    int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete! " << std::endl;
+		std::cout << "Status: " << status << std::endl;
+
+    }
+
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void SetShadowResolution(Settings::QualitySettings Quality)
+{
+	unsigned int resolution = 1024;
+	switch (Quality)
+	{
+	case Settings::QualitySettings::Ultra:
+		resolution = 4096;
+		break;
+	case Settings::QualitySettings::High:
+		resolution = 2048;
+		break;
+	case Settings::QualitySettings::Medium:
+		resolution = 1024;
+		break;
+	case Settings::QualitySettings::Low:
+		resolution = 512;
+		break;
+	default:
+		break;
+	}
+
+	SHADOW_HEIGHT = resolution;
+	SHADOW_WIDTH = resolution;
+	GenerateShadowBuffer();
+}
 
 void Renderer::Init(bool fullScreen, std::string font_name) {
 	fontName = font_name;
@@ -209,7 +277,7 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 	// Accept fragment if it is closer to the camera than the former one
 	glDepthFunc(GL_LESS);
 	// Cull triangles which normal is not towards the camera
-	glEnable(GL_CULL_FACE);
+	// glEnable(GL_CULL_FACE);
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_LIGHTING);
@@ -221,7 +289,7 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 	Image::InitImageRendering();
 	glfwSwapInterval(0);
 
-	TextUI* infos = new TextUI("alpha dev build : vA0.000.8", Vector3(0, 0, 0), Vector3(2, *ResY - 2, 0));
+	TextUI* infos = new TextUI("alpha dev build : vA0.001.2", Vector3(0, 0, 0), Vector3(2, *ResY - 2, 0));
 	infos->transform->SetScale(Vector3(0.4, 0.4, 0.4));
 /*
 	shader = new Shader(Map_VS_shader, Map_FS_shader);
@@ -231,48 +299,18 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 
 	printf("Loading shader\n");
 	shader = new Shader(Map_VS_shader, Map_FS_shader);
-	//shader = new Shader(a10_shadow_mapping_VS_shader, a10_shadow_mapping_FS_shader);
+	printf("Loading skyboxShader\n");
+	skyboxShader = new Shader(skybox_VS_shader, skybox_FS_shader);
 	printf("Loading simpleDepthShader\n");
 	simpleDepthShader = new Shader(a10_shadow_mapping_depth_VS_shader, a10_shadow_mapping_depth_FS_shader, a10_shadow_mapping_depth_GS_shader);
+	printf("Loading simpleDepthShaderInstancied\n");
+	simpleDepthShaderInstancied = new Shader(shadow_mapping_Instancing_VS_shader, shadow_mapping_Instancing_FS_shader, shadow_mapping_Instancing_GS_shader);
 	printf("Loading debugDepthQuad\n");
 	debugDepthQuad = new Shader(a10_debug_quad_VS_shader, a10_debug_quad_depth_FS_shader);
 	printf("Loading debugCascadeShader\n");
 	debugCascadeShader = new Shader(a10_debug_cascade_VS_shader, a10_debug_cascade_FS_shader);
 
-	
-
-	glGenFramebuffers(1, &depthMapFBO);
-
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, depthMap);
-    glTexImage3D(
-        GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F, SHADOW_WIDTH, SHADOW_HEIGHT, int(shadowCascadeLevels.size()) + 1,
-        0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-    constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-
-
-    int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete! " << std::endl;
-		std::cout << "Status: " << status << std::endl;
-
-    }
-
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GenerateShadowBuffer();
 
     // configure UBO
     // --------------------
@@ -294,6 +332,17 @@ double Time::GetTime() {
 	return glfwGetTime() * 1000;
 }
 
+int Orientations[6] = 
+{
+	GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+	
+};
+
 unsigned int loadCubemap(std::vector<std::string> faces)
 {
     unsigned int textureID;
@@ -306,7 +355,8 @@ unsigned int loadCubemap(std::vector<std::string> faces)
         unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
         if (data)
         {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(Orientations[i], 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			std::cout << "Loaded cubemap texture: " << faces[i] << std::endl;
             stbi_image_free(data);
         }
         else
@@ -335,8 +385,8 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 
 	float relativeX = (((float)x / (float)*Renderer::ResX) * 2 - 1);
 	float relativeY = -(((float)y / (float)*Renderer::ResY) * 2 - 1);
-	float relativeSizeX = (float)sizeX / *Renderer::ResX * 2;
-	float relativeSizeY = (float)sizeY / *Renderer::ResY * 2;
+	float relativeSizeX = (float)sizeX / (float)(*Renderer::ResX * 2);
+	float relativeSizeY = -(float)sizeY / (float)(*Renderer::ResY * 2);
 
 	float vertices[] = {
 		relativeX                , relativeY + relativeSizeY, (float)zIndex, 01, // left
@@ -391,8 +441,8 @@ void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int 
 
 	float relativeX = (((float)x / (float)*Renderer::ResX) * 2 - 1);
 	float relativeY = -(((float)y / (float)*Renderer::ResY) * 2 - 1);
-	float relativeSizeX = (float)sizeX / *Renderer::ResX * 2;
-	float relativeSizeY = (float)sizeY / *Renderer::ResY * 2;
+	float relativeSizeX = (float)sizeX / (float)(*Renderer::ResX * 2);
+	float relativeSizeY = -(float)sizeY / (float)(*Renderer::ResY * 2);
 
 	float vertices[] = {
 		relativeX                , relativeY + relativeSizeY, (float)zIndex, 01, // left
@@ -403,6 +453,13 @@ void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int 
 		relativeX + relativeSizeX, relativeY                , (float)zIndex, 10, // top
 		relativeX + relativeSizeX, relativeY + relativeSizeY, (float)zIndex, 11  // right
 	};
+	/*
+	printf("ResX : %d\nResY : %d\n", *Renderer::ResX, *Renderer::ResY);
+
+	for (int i = 0; i < 24; i+=4)
+	{
+		printf("%f, %f, %f, %f\n", vertices[i], vertices[i + 1], vertices[i + 2], vertices[i + 3]);
+	}*/
 
 	ImageShader->use();
 	glActiveTexture(GL_TEXTURE0);
@@ -641,35 +698,101 @@ GLFWwindow* Renderer::GetWindow() {
 	return window;
 }
 
-void RenderGameObject(Mesh * mesh, Shader* shaderUse, glm::vec3 SunDir) {
+char * Name = nullptr;
+Vector3 Value = Vector3(0, 0, 0);
+
+std::vector<int> ShaderIDs;
+void SetupShader(Shader * sh)
+{
+
+	int ShaderIDsCount = ShaderIDs.size();
+	for (int i = 0; i < ShaderIDsCount; i++)
+	{		
+		if(ShaderIDs[i] == sh->ID)
+			return;
+	}
+	ShaderIDs.push_back(sh->ID);
+	if(Name != nullptr)
+	{
+		//printf("Set %s to %f %f %f\n", Name, Value.x, Value.y, Value.z);
+		sh->setVec3(Name, Value);
+	}
+
+	sh->setMat4("projection", ProjectionMatrix);
+	sh->setMat4("view", ViewMatrix);
+
+	sh->setVec3("lightPos", Vector3(-lightDirGlobal.x * 100, -lightDirGlobal.y * 100, -lightDirGlobal.z * 100));
+	sh->setVec3("lightDir", Vector3(-lightDirGlobal.x, -lightDirGlobal.y, -lightDirGlobal.z));
+	sh->setVec3("viewPos", RaphEngine::camera->transform->GetPosition());
+	sh->setFloat("farPlane", RaphEngine::camera->farPlane);
+	sh->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+	sh->setInt("cascadeCount", shadowCascadeLevels.size());
+
+	for (size_t i = 0; i < shadowCascadeLevels.size(); i++)
+	{
+		sh->setFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), shadowCascadeLevels[i]);
+	}
+
+	for(int i = 0; i < SAMPLE_SIZE; i++)
+	{
+		std::string name = "offsets[" + std::to_string(i) + "]";
+		glUniform2f(glGetUniformLocation(sh->ID, name.c_str()), offsets[i].x, offsets[i].y);
+	}
+
+	//sh->setVec2Array("offsets", 64, offsets);
+
+	const char* names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height", "shadowMap" };
+	for (int i = 0; i < 5; i++)
+	{
+		sh->setInt(names[i], i);
+	}
+
+	glActiveTexture(GL_TEXTURE4);
+	sh->setInt("shadowMap", 4);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, depthMap);
+}
+
+void CleanUpShaders()
+{
+	ShaderIDs.clear();
+}
+
+void RenderGameObject(Matrix4 ObjectModel, Mesh * mesh, Shader* shaderUse, int InstancesCount) {
 	// int err = 0;
 
 	if(mesh->vertices.size() == 0)
 		return;
 
 	//const char * names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height" };
+	bool HaveTexture = false;
 	for (size_t i = 0; i < mesh->textures.size(); i++)
 	{
+		if(mesh->textures[i].type == "texture_diffuse") HaveTexture = true;
 		glActiveTexture(GL_TEXTURE0 + i);
 		//shaderUse->setInt(mesh->textures[i].type.c_str(), i);
 		glBindTexture(GL_TEXTURE_2D, mesh->textures[i].id);
 	}
-
+	shaderUse->setMat4("model", ObjectModel * mesh->ModelMatrix);
+	shaderUse->setBool("HaveTexture", HaveTexture);
 	shaderUse->setBool("HaveNormalMap", mesh->haveNormalMap);
 	shaderUse->setBool("HaveSpecularMap", mesh->haveSpecularMap);
 	shaderUse->setBool("HaveHeightMap", mesh->haveHeightMap);
 
 	//glBindTexture(GL_TEXTURE_2D, depthMap);
+
 	glBindVertexArray(mesh->vao);
 
-	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
-
+	if(InstancesCount == 0)
+		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+	else
+		glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0, InstancesCount);
 	//glBindVertexArray(0);
 	//glActiveTexture(GL_TEXTURE0);
 
 }
 
-void RenderGameObjectShadow(Mesh* mesh) {
+void RenderGameObjectShadow(Mesh* mesh, int InstancesCount) {
 	if (mesh->vertices.size() == 0)
 		return;
 	if (!mesh->castShadows)
@@ -677,78 +800,52 @@ void RenderGameObjectShadow(Mesh* mesh) {
 	
 
 	glBindVertexArray(mesh->vao);
-
-	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+	if(InstancesCount == 0)
+		glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+	else
+		glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(mesh->indices.size()), GL_UNSIGNED_INT, 0, InstancesCount);
 
 	//glBindVertexArray(0);
 	//glActiveTexture(GL_TEXTURE0);
 }
 
 
-
-char * Name = nullptr;
-Vector3 Value = Vector3(0, 0, 0);
-
-
-void RenderObjects(Shader* sh, glm::vec3 lightDir) {
-
-
-	Shader* shaderUse = sh;
-
-	shaderUse->use();
-
-	if(Name != nullptr)
-	{
-		//printf("Set %s to %f %f %f\n", Name, Value.x, Value.y, Value.z);
-		shaderUse->setVec3(Name, Value);
-	}
-
-	shaderUse->setMat4("projection", ProjectionMatrix);
-	shaderUse->setMat4("view", ViewMatrix);
-
-	shaderUse->setVec3("lightPos", Vector3(-lightDir.x * 100, -lightDir.y * 100, -lightDir.z * 100));
-	shaderUse->setVec3("lightDir", Vector3(-lightDir.x, -lightDir.y, -lightDir.z));
-	shaderUse->setVec3("viewPos", RaphEngine::camera->transform->GetPosition());
-	shaderUse->setFloat("farPlane", RaphEngine::camera->farPlane);
-	shaderUse->setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-	shaderUse->setInt("cascadeCount", shadowCascadeLevels.size());
-	
- 	for (size_t i = 0; i < shadowCascadeLevels.size(); i++)
-    {
-		shaderUse->setFloat(("cascadePlaneDistances[" + std::to_string(i) + "]").c_str(), shadowCascadeLevels[i]);
-		
-    }
-
-	for(int i = 0; i < SAMPLE_SIZE; i++)
-	{
-
-		std::string name = "offsets[" + std::to_string(i) + "]";
-		glUniform2f(glGetUniformLocation(shaderUse->ID, name.c_str()), offsets[i].x, offsets[i].y);
-	}
-
-	//shaderUse->setVec2Array("offsets", 64, offsets);
-
-	const char* names[] = { "texture_diffuse", "texture_specular", "texture_normal", "texture_height", "shadowMap" };
-	for (int i = 0; i < 5; i++)
-	{
-		shaderUse->setInt(names[i], i);
-	}
-
-
-	glActiveTexture(GL_TEXTURE4);
-	shaderUse->setInt("shadowMap", 4);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, depthMap);
+void RenderObjects() {
 
 	for (GameObject* go : GameObject::SpawnedGameObjects) {
 		if (go->activeSelf)
 		{
-			shaderUse->setMat4("model", go->transform->ModelMatrix /* + mesh->ModelMatrix*/);
 
-			int count = go->meshes.size();
+			Shader* RenderObjectShader = go->ObjectShader;
+			if(RenderObjectShader == nullptr)
+				continue;
+
+			RenderObjectShader->use();
+
+			int InstancesCount = 0;
+			if(dynamic_cast<InstanciedGameObject*>(go) != nullptr)
+			{
+				InstanciedGameObject* InstanceGo = dynamic_cast<InstanciedGameObject*> (go);
+				for (int i = 0; i < InstanceGo->instancesCount; i++)
+				{
+					std::string name = "ModelOffsets[" + std::to_string(i) + "]";
+					//printf("setting this %dth shit to the correct fucking matrix\n");
+					RenderObjectShader->setMat4(name.c_str(), InstanceGo->InstancesTransforms[i]->ModelMatrix);
+				}
+				InstancesCount = InstanceGo->instancesCount;
+			}
+
+			SetupShader(RenderObjectShader);
+			//RenderObjectShader->use();
+			
+			// sh->setMat4("model", go->transform->ModelMatrix /* + mesh->ModelMatrix*/);
+			std::vector<Mesh>* meshes = go->GetLODMesh(RaphEngine::camera->transform->GetPosition(), RaphEngine::camera->farPlane);
+			if(meshes == nullptr)
+				continue;
+			int count = meshes->size();
 			for (int i = 0; i < count; i++)
 			{
-				RenderGameObject(&go->meshes[i], sh, lightDir);
+				RenderGameObject(go->transform->ModelMatrix, &((*meshes)[i]), RenderObjectShader, InstancesCount);
 			}
 		}
 	}
@@ -868,18 +965,36 @@ std::vector<glm::mat4> getLightSpaceMatrices()
     return ret;
 }
 
-void RenderObjectsShadows(Shader* sh) {
-	sh->use();
+void RenderObjectsShadows(Shader* sh, Shader* instanciedSh) {
 
 	for (GameObject* go : GameObject::SpawnedGameObjects) {
 		if (go->activeSelf)
 		{
-			sh->setMat4("model", go->transform->ModelMatrix /* + mesh->ModelMatrix*/);
+			int InstancesCount = 0;
+			if(dynamic_cast<InstanciedGameObject*>(go) != nullptr)
+			{
+				sh = instanciedSh;
+				sh->use();
 
-			int count = go->meshes.size();
+				InstanciedGameObject* InstanceGo = dynamic_cast<InstanciedGameObject*> (go);
+				for (int i = 0; i < InstanceGo->instancesCount; i++)
+				{
+					std::string name = "ModelOffsets[" + std::to_string(i) + "]";
+					sh->setMat4(name.c_str(), InstanceGo->InstancesTransforms[i]->ModelMatrix);
+				}
+				InstancesCount = InstanceGo->instancesCount;
+				
+			}
+			else
+				sh->use();
+			sh->setMat4("model", go->transform->ModelMatrix /* + mesh->ModelMatrix*/);
+			std::vector<Mesh>* meshes = go->GetLODMesh(RaphEngine::camera->transform->GetPosition(), RaphEngine::camera->farPlane);
+			if(meshes == nullptr)
+				continue;
+			int count = meshes->size();
 			for (int i = 0; i < count; i++)
 			{
-				RenderGameObjectShadow(&go->meshes[i]);
+				RenderGameObjectShadow(&((*meshes)[i]), InstancesCount);
 			}
 		}
 	}
@@ -936,26 +1051,7 @@ void CalculateLights(glm::vec3 lightDir)
 	
 }
 */
-std::string Mat4ToString(glm::mat4 mat)
-{
-    std::string str;
-    str += "mat4(";
-    for (int i = 0; i < 4; ++i)
-    {
-        str += "\n\t";
-        for (int j = 0; j < 4; ++j)
-        {
-            str += std::to_string(mat[i][j]);
-            if (j != 3)
-            {
-                str += ", ";
-            }
-        }
-        str += "\n";
-    }
-    str += ")";
-    return str;
-}
+
 
 void CalculateLights(glm::vec3 lightDir)
 {
@@ -973,17 +1069,15 @@ void CalculateLights(glm::vec3 lightDir)
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-	simpleDepthShader->use();
+	//simpleDepthShader->use();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	//glCullFace(GL_FRONT);  // peter panning
-	RenderObjectsShadows(simpleDepthShader);
+	RenderObjectsShadows(simpleDepthShader, simpleDepthShaderInstancied);
 	//glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-
 }
 
 std::vector<GLuint> visualizerVAOs;
@@ -991,7 +1085,7 @@ std::vector<GLuint> visualizerVBOs;
 std::vector<GLuint> visualizerEBOs;
 void drawCascadeVolumeVisualizers(const std::vector<glm::mat4>& lightMatrices, Shader* shader)
 {
-	printf("Debug drawing...\n");
+	//printf("Debug drawing...\n");
     visualizerVAOs.resize(8);
     visualizerEBOs.resize(8);
     visualizerVBOs.resize(8);
@@ -1057,6 +1151,110 @@ void drawCascadeVolumeVisualizers(const std::vector<glm::mat4>& lightMatrices, S
     visualizerVBOs.clear();
 }
 
+
+float skyboxVertices[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
+unsigned int skyboxVAO, skyboxVBO;
+unsigned int cubemapTexture;
+void InitSkybox()
+{
+    // skybox VAO
+    
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	skyboxShader->use();
+	skyboxShader->setInt("skybox", 0);
+
+	cubemapTexture = loadCubemap(Renderer::skyboxTextures);
+}
+
+void RaphEngine::SetSkyBox(std::vector<std::string> skyboxTextures)
+{
+	Renderer::skyboxTextures = skyboxTextures;
+	if (skyboxTextures.size() < 6)
+	{
+		printf("Skybox textures not enough, need 6 textures\n");
+		return;
+	}
+	printf("Skybox set with %ld textures\n", skyboxTextures.size());
+	if (skyboxTextures.size() > 6)
+	{
+		printf("Skybox textures too many, only using first 6 textures\n");
+		skyboxTextures.resize(6);
+	}
+	InitSkybox();
+}
+
+void RenderSkyBox()
+{
+	if(Renderer::skyboxTextures.size() == 0)
+		return;
+	//printf("Rendering skybox\n");
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+	skyboxShader->use();
+	glm::mat4 viewNoTranslate = glm::mat4(glm::mat3(ViewMatrix)); // remove translation from the view matrix
+	skyboxShader->setMat4("view", viewNoTranslate);
+	skyboxShader->setMat4("projection", ProjectionMatrix);
+	glBindVertexArray(skyboxVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS); // set depth function back to default
+}
+
 void Renderer::StartFrameRender() {
 
 	//float lightRotation = Time::GetTime() / 1000.0f;
@@ -1065,7 +1263,7 @@ void Renderer::StartFrameRender() {
 	//glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	CalculateMat();
-
+	
 	CalculateLights(lightDirGlobal);
 	// CalculateLights(glm::vec3(0, -1, -1));
 
@@ -1073,12 +1271,15 @@ void Renderer::StartFrameRender() {
 	glViewport(0, 0, *ResX, *ResY);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	RenderObjects(shader, lightDirGlobal);
-
+	
+	RenderSkyBox();
+	
+	RenderObjects();
+	CleanUpShaders();
+	
 	if (lightMatricesCache.size() != 0)
 	{
-		printf("Drawing mat\n");
+		//printf("Drawing mat\n");
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		debugCascadeShader->use();
@@ -1089,13 +1290,11 @@ void Renderer::StartFrameRender() {
 	}
 
 
-	Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
-
-	//Image::RenderImage(depthMap, 0, 0, 1000, 1000, 0);
+	Image::RenderImage(depthMap, 0, 0, 1000, 1000, 10);
 
 
 	float range = 50.0f;
-	float near_plane = .1f, far_plane = range * 2.0f;
+	//float near_plane = .1f, far_plane = range * 2.0f;
 
 	
 	debugDepthQuad->use();

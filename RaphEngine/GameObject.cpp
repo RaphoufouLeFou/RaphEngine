@@ -5,20 +5,23 @@
 #include "include/RaphEngine.h"
 
 
-std::vector<GameObject*> GameObject::SpawnedGameObjects =
-	std::vector<GameObject*>();
+std::vector<GameObject*> GameObject::SpawnedGameObjects = std::vector<GameObject*>();
 
 
 GameObject::GameObject() {
 	SpawnedGameObjects.push_back(this);
 	transform = new Transform(this);
+	ObjectShader = nullptr;
 	parent = nullptr;
 	children = nullptr;
-	meshes = std::vector<Mesh>();
 	layer = 0;
 	activeSelf = true;
-	meshPath = nullptr;
 	smoothTextures = true;
+	for (int i = 0; i < 16; i++)
+	{
+		meshPaths[i] = nullptr;
+	}
+	
 	name = "new GameObject";
 }
 
@@ -26,11 +29,32 @@ GameObject::~GameObject() {
 	delete transform;
 }
 
+InstanciedGameObject::InstanciedGameObject() 
+{
+	instancesCount = 0;
+}
+
 void GameObject::InitGO() {
-	if(meshPath == nullptr || meshPath == "")
-		return;
-	Model* model = new Model(meshPath, smoothTextures);
-	meshes.insert(meshes.end(), model->meshes.begin(), model->meshes.end());
+	if(LODsCount > 16) LODsCount = 16;
+	for (int i = 0; i < LODsCount; i++)
+	{
+		const char * meshPath = meshPaths[i];
+		if(meshPath == nullptr)
+			continue;
+		printf("Loading model %d of %s\n", i, name);
+		Model* model = new Model(meshPath, smoothTextures);
+		LODs[i].insert(LODs[i].end(), model->meshes.begin(), model->meshes.end());
+	}
+}
+
+std::vector<Mesh>* GameObject::GetLODMesh(Vector3 cameraPos, float maxDist)
+{
+	if(LODsCount <= 0) return nullptr;
+	float distToCamera = glm::distance(cameraPos, transform->GetPosition());
+	float stepDistance = maxDist / (float)LODsCount;
+	int index = (int)(distToCamera / stepDistance);
+	if(index > LODsCount) index = LODsCount;
+	return &LODs[index];
 }
 
 void Mesh::ReclaculateNormals() {
@@ -129,9 +153,9 @@ void Mesh::GenerateBuffers() {
 void Transform::RecalculateMatrix()
 {
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(position.x, position.y, position.z));
+	model = glm::translate(model, position);
 	model = model * glm::toMat4(glm::quat(glm::radians(rotation)));
-	model = glm::scale(model, glm::vec3(scale.x, scale.y, scale.z));
+	model = glm::scale(model, scale);
 	ModelMatrix = model;
 }
 
@@ -155,9 +179,16 @@ Transform::Transform(GameObject* gameObject)
 	this->gameObject = gameObject;
 	this->position = Vector3(0, 0, 0);
 	this->rotation = Vector3(0, 0, 0);
-	this->scale.x = 1;
-	this->scale.y = 1;
-	this->scale.z = 1;
+	this->scale = Vector3(1, 1, 1);
+	RecalculateMatrix();
+}
+
+Transform::Transform(Vector3 Position)
+{
+	this->gameObject = nullptr;
+	this->position = Position;
+	this->rotation = Vector3(0, 0, 0);
+	this->scale = Vector3(1, 1, 1);
 	RecalculateMatrix();
 }
 
@@ -185,7 +216,7 @@ Vector3 Transform::GetScale()
 }
 
 Camera::Camera() : GameObject() {
-	fov = 45.0f;
+	fov = 60.0f;
 	nearPlane = 0.1f;
 	farPlane = 20000.0f;
 }
