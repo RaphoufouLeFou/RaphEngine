@@ -127,7 +127,9 @@ xcopy /y /d  "$(OutDir)RaphEngine.lib" "$(ProjectDir)..\libs\"
 xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>python -u "$(ProjectDir)..\tools\shaderUtils.py"</Command>
+      <Command>D:
+cd $(ProjectDir)..\tools\
+python shaderUtils.py</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -167,11 +169,11 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
     <ClInclude Include="include\RayCast.h" />
     <ClInclude Include="include\Renderer.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\shaders.h" />
     <ClInclude Include="include\Text.h" />
     <ClInclude Include="include\UI.h" />
     <ClInclude Include="include\Vector.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="shader\shaders.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
@@ -189,7 +191,7 @@ xcopy /y /d  "$(ProjectDir)\include" "$(ProjectDir)..\include"</Command>
     <ClCompile Include="RayCast.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="shader\shaders.cpp" />
+    <ClCompile Include="shaders.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="UI.cpp" />
     <ClCompile Include="Vector.cpp" />

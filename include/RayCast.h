@@ -2,13 +2,7 @@
 
 #include "RaphEngine.h"
 
-
-#ifdef RAPHENGINE_EXPORTS
-#define RAPHENGINE_API __declspec(dllexport)
-#else
-#define RAPHENGINE_API __declspec(dllimport)
-#endif
-
+#include "LibManager.h"
 
 typedef struct RayInfo
 {

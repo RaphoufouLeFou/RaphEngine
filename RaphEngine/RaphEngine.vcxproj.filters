@@ -57,9 +57,6 @@
     <ClInclude Include="include\Images.h">
       <Filter>Fichiers d%27en-tête\include</Filter>
     </ClInclude>
-    <ClInclude Include="shader\shaders.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="F:\downloads\stb_image.h">
       <Filter>Fichiers sources</Filter>
     </ClInclude>
@@ -67,6 +64,9 @@
       <Filter>Fichiers d%27en-tête\include</Filter>
     </ClInclude>
     <ClInclude Include="include\RayCast.h">
+      <Filter>Fichiers d%27en-tête\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shaders.h">
       <Filter>Fichiers d%27en-tête\include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -101,9 +101,6 @@
     <ClCompile Include="Inputs.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="shader\shaders.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="stb_image.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
@@ -111,6 +108,9 @@
       <Filter>Fichiers sources</Filter>
     </ClCompile>
     <ClCompile Include="RayCast.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>

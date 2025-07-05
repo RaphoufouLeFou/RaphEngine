@@ -1,24 +1,27 @@
 #pragma once
-
-#ifdef RAPHENGINE_EXPORTS
-#define RAPHENGINE_API __declspec(dllexport)
-#else
-#define RAPHENGINE_API __declspec(dllimport)
-#endif
+#include "LibManager.h"
 
 #include "Vector.h"
+#include "Shader.h"
 #include <vector>
 #include <string>
+
 #ifdef RAPHENGINE_EXPORTS
-#define GLM_ENABLE_EXPERIMENTAL
-#include "Shader.h"
-#include <gtc/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
-#include <gtx/quaternion.hpp>
+	#define GLM_ENABLE_EXPERIMENTAL
+	#ifdef _WIN32
+		#include <gtc/matrix_transform.hpp>
+		#include <gtc/type_ptr.hpp>
+		#include <gtx/quaternion.hpp>
+	#else
+		#include <glm/gtc/matrix_transform.hpp>
+		#include <glm/gtc/type_ptr.hpp>
+		#include <glm/gtx/quaternion.hpp>
+	#endif
 #endif
 
 class Transform;
 class Mesh;
+
 
 class RAPHENGINE_API GameObject {
 public:
@@ -26,18 +29,31 @@ public:
 	GameObject* parent;
 	GameObject** children;
 	const char* name;
-	const char* meshPath;
+	Shader* ObjectShader;
+	const char* meshPaths[16];
+	int LODsCount;
 	bool smoothTextures;
-	std::vector<Mesh> meshes;
+	std::vector<Mesh> LODs[16];
+	std::vector<Mesh> colliders;
 	bool activeSelf;
 	int layer;
 	GameObject();
 	~GameObject();
 	void InitGO();
+	std::vector<Mesh>* GetLODMesh(Vector3 cameraPos, float maxDist);
 	virtual void Start() {}
 	virtual void Update() {}
 
 	static std::vector<GameObject*> SpawnedGameObjects;
+};
+
+class RAPHENGINE_API InstanciedGameObject : public GameObject
+{
+public:
+	int instancesCount;
+	Transform* InstancesTransforms[128];
+	InstanciedGameObject();
+	InstanciedGameObject(int InstancesCount);
 };
 
 class RAPHENGINE_API Transform {
@@ -48,13 +64,14 @@ private:
 	void RecalculateMatrix();
 public:
 	GameObject* gameObject;
-#ifdef RAPHENGINE_EXPORTS
+//#ifdef RAPHENGINE_EXPORTS
 	glm::mat4 ModelMatrix;
-#endif
+//#endif
 	void SetPosition(Vector3 position);
 	void SetRotation(Vector3 rotation);
 	void SetScale(Vector3 scale);
 	Transform(GameObject* gameObject);
+	Transform(Vector3 Position);
 	Transform();
 	Vector3 GetPosition();
 	Vector3 GetRotation();
@@ -83,33 +100,39 @@ public:
 	bool haveNormalMap;
 	bool haveSpecularMap;
 	bool haveHeightMap;
-#ifdef RAPHENGINE_EXPORTS
-	glm::mat4 ModelMatrix;
-	glm::vec3 InfSpehereCenter;
+
+	Shader* MeshShader;
+
+	Matrix4 ModelMatrix;
+	Vector3 InfSpehereCenter;
 	float InfSphereRadius;
-#endif
+
 	unsigned int vao;
 	bool castShadows;
 	bool staticMesh;
 
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
+	void ReclaculateNormals();
+	void CalculateInflence();
+
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, bool autoNormal = false)
 	{
+		this->MeshShader = nullptr;
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+
+		if(autoNormal)
+			ReclaculateNormals();
+
 		castShadows = true;
 		staticMesh = false;
 
-#ifdef RAPHENGINE_EXPORTS
 		GenerateBuffers();
 
 	}
 	unsigned int vbo, ebo;
 private:
 	void GenerateBuffers();
-#else
-	}
-#endif
 };
 
 class RAPHENGINE_API Camera : public GameObject {

@@ -1,10 +1,5 @@
 #pragma once
-
-#ifdef RAPHENGINE_EXPORTS
-#define RAPHENGINE_API __declspec(dllexport)
-#else
-#define RAPHENGINE_API __declspec(dllimport)
-#endif
+#include "LibManager.h"
 
 #include <vector>
 #include "Vector.h"
@@ -15,6 +10,9 @@
 #include "Inputs.h"
 #include "UI.h"
 #include "RayCast.h"
+#include "Guizmo.h"
+#include "Shader.h"
+#include "Settings.h"
 
 typedef char byte;
 
@@ -27,14 +25,17 @@ public:
 class RaphEngine
 {
 public:
+	static void PassShaderVector3(char* name, Vector3 value);
+	static void SetSkyBox(std::vector<std::string> skyboxTextures);
 	static RAPHENGINE_API GameObject *Player;
-	static const char* windowTitle;
 	static RAPHENGINE_API void Init(const char* windowTitle, std::string font_name);
 	static RAPHENGINE_API void Run();
 	static RAPHENGINE_API void GetWindowSize(int* x, int* y);
+	static RAPHENGINE_API void UpdateLogo(const char * newLogoPath);
+	static RAPHENGINE_API Camera* camera;
 
 	static std::vector<void (*)()> Starts;
 	static std::vector<void (*)()> Updates;
-	static RAPHENGINE_API void UpdateLogo(const char * newLogoPath);
-	static RAPHENGINE_API Camera* camera;
+	static const char* windowTitle;
+
 };

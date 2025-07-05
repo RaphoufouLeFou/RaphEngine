@@ -1,9 +1,7 @@
-#ifdef _WIN32
-
 // dllmain.cpp : Définit le point d'entrée de l'application DLL.
 #include "pch.h"
 
-BOOL APIENTRY DllMain( HMODULE hModule,
+int APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
                      )
@@ -18,5 +16,3 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     }
     return TRUE;
 }
-
-#endif
