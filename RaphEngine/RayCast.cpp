@@ -97,7 +97,7 @@ vec3 GetNewDirection(vec3 origin, vec3 LocalOrigin, vec3 direction, mat4 InvMode
 bool haveCollision(vec3 origin, vec3 direction, vec3& out_intersection_point, vec3& out_normal, GameObject** objOut, int layer)
 {
     
-    vec3 oldIntersectionPoint;
+    vec3 oldIntersectionPoint = vec3(0);
     bool haveCollision = false;
 
     int objCount = GameObject::SpawnedGameObjects.size();

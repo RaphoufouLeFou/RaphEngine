@@ -8,8 +8,8 @@
 enum class MouseButton
 {
     LEFT = 0,
-    MIDDLE = 2,
     RIGHT = 1,
+    MIDDLE = 2,
 };
 
 enum class KeyCode // From SDL2 for compatibility

@@ -69,6 +69,12 @@
     <ClInclude Include="include\shaders.h">
       <Filter>Fichiers d%27en-tête\include</Filter>
     </ClInclude>
+    <ClInclude Include="include\Settings.h">
+      <Filter>Fichiers d%27en-tête\include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Guizmo.h">
+      <Filter>Fichiers d%27en-tête\include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RaphEngine.cpp">
@@ -111,6 +117,12 @@
       <Filter>Fichiers sources</Filter>
     </ClCompile>
     <ClCompile Include="shaders.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Settings.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Guizmo.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>

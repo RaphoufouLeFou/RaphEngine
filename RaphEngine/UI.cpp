@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "include/UI.h"
+#include "include/Renderer.h"
 
 std::vector<UIElement*> UIElement::Elements;
 std::vector<ButtonUI*> ButtonUI::Buttons;
@@ -13,17 +14,19 @@ void TextUI::DrawUI()
 	{
 		return;
 	}
-	Vector3 position = this->transform->GetPosition();
+	Vector3 position = this->CalculatedTransform->GetPosition();
 	Text::RenderText(this->text.c_str(), position.x, position.y, this->transform->GetScale().y, this->color);
 }
 
-TextUI::TextUI(std::string text, Vector3 color, Vector3 position)
+TextUI::TextUI(std::string text, Vector3 color, Vector3 position, UISnapPoint SnapPoint)
 {
 	UIElement::Elements.push_back(this);
 	this->text = text;
 	this->color = color;
 	this->transform = new Transform();
 	this->transform->SetPosition(position);
+	this->SnapPoint = SnapPoint;
+	CalculateSnapedPosition();
 }
 
 void ImageUI::DrawUI()
@@ -37,12 +40,14 @@ void ImageUI::DrawUI()
 	Image::RenderImage(this->texture, position.x, position.y, scale.x, scale.y, position.z);
 }
 
-ImageUI::ImageUI(std::string texture, Vector3 position)
+ImageUI::ImageUI(std::string texture, Vector3 position, UISnapPoint SnapPoint)
 {
 	this->texture = texture;
 	this->transform = new Transform();
 	this->transform->SetPosition(position);
+	this->SnapPoint = SnapPoint;
 	UIElement::Elements.push_back(this);
+	CalculateSnapedPosition();
 }
 
 void ButtonUI::DrawUI()
@@ -57,15 +62,17 @@ void ButtonUI::DrawUI()
 	Text::RenderText(this->text.c_str(), position.x, position.y, scale.z, this->color);
 }
 
-ButtonUI::ButtonUI(std::string texture, std::string text, Vector3 color, Vector3 position)
+ButtonUI::ButtonUI(std::string texture, std::string text, Vector3 color, Vector3 position, UISnapPoint SnapPoint)
 {
 	this->texture = texture;
 	this->text = text;
 	this->color = color;
 	this->transform = new Transform();
 	this->transform->SetPosition(position);
+	this->SnapPoint = SnapPoint;
 	UIElement::Elements.push_back(this);
 	ButtonUI::Buttons.push_back(this);
+	CalculateSnapedPosition();
 }
 
 void ButtonUI::CheckAllClicks(Vector2 mousePos)
@@ -99,6 +106,44 @@ void UIElement::DrawAllUI()
 	{
 		UIElement* element = UIElement::Elements[i];
 		element->DrawUI();
+	}
+}
+
+void UIElement::CalculateSnapedPosition()
+{
+	Vector3 pos = transform->GetPosition();
+	CalculatedTransform = new Transform(transform);
+	Vector3 CalculatedPosition;
+	Vector2 ScreenSize = Vector2(*(Renderer::ResX), *(Renderer::ResY));
+
+	switch (SnapPoint)
+	{
+		case UISnapPoint::TOP_LEFT:
+			CalculatedPosition = Vector3(pos.x, pos.y, pos.z);
+			break;
+		case UISnapPoint::TOP_RIGHT:
+			CalculatedPosition = Vector3(ScreenSize.x - pos.x, pos.y, pos.z);
+			break;
+		case UISnapPoint::BOTTOM_LEFT:
+			CalculatedPosition = Vector3(pos.x, ScreenSize.y - pos.y, pos.z);
+			break;
+		case UISnapPoint::BOTTOM_RIGHT:
+			CalculatedPosition = Vector3(ScreenSize.x - pos.x, ScreenSize.y - pos.y, pos.z);
+			break;
+		case UISnapPoint::CENTER:
+			CalculatedPosition = Vector3(ScreenSize.x / 2 - pos.x, ScreenSize.y / 2 - pos.y, pos.z);
+			break;
+		default: break;
+	}
+	CalculatedTransform->SetPosition(CalculatedPosition);
+
+}
+
+void UIElement::RecalculateTransforms()
+{
+	for (UIElement *UIe : UIElement::Elements)
+	{
+		UIe->CalculateSnapedPosition();
 	}
 }
 

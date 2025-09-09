@@ -31,8 +31,12 @@ public:
 	const char* name;
 	Shader* ObjectShader;
 	const char* meshPaths[16];
-	int LODsCount;
+	// Bilinear filtering for textures
 	bool smoothTextures;
+	// the number of LODs
+	int LODsCount;
+	// the distance must me between 0 and 1.
+	float LODsDistances[16];
 	std::vector<Mesh> LODs[16];
 	std::vector<Mesh> colliders;
 	bool activeSelf;
@@ -72,6 +76,7 @@ public:
 	void SetScale(Vector3 scale);
 	Transform(GameObject* gameObject);
 	Transform(Vector3 Position);
+	Transform(Transform* transform);
 	Transform();
 	Vector3 GetPosition();
 	Vector3 GetRotation();
@@ -116,6 +121,7 @@ public:
 
 	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, bool autoNormal = false)
 	{
+		printf("Loading mesh with %d vertices and %d indices\n", vertices.size(), indices.size());
 		this->MeshShader = nullptr;
 		this->vertices = vertices;
 		this->indices = indices;

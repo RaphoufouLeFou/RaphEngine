@@ -20,6 +20,7 @@ GameObject::GameObject() {
 	for (int i = 0; i < 16; i++)
 	{
 		meshPaths[i] = nullptr;
+		LODsDistances[i] = 0.0f;
 	}
 	
 	name = "new GameObject";
@@ -50,10 +51,15 @@ void GameObject::InitGO() {
 std::vector<Mesh>* GameObject::GetLODMesh(Vector3 cameraPos, float maxDist)
 {
 	if(LODsCount <= 0) return nullptr;
+	if(LODsCount == 1)
+		return &LODs[0];
 	float distToCamera = glm::distance(cameraPos, transform->GetPosition());
-	float stepDistance = maxDist / (float)LODsCount;
-	int index = (int)(distToCamera / stepDistance);
-	if(index > LODsCount) index = LODsCount;
+	if(distToCamera > maxDist)
+		return nullptr;
+	int index;
+	for(index = 0; index < LODsCount; index++)
+		if(distToCamera < LODsDistances[index] * maxDist)
+			break;
 	return &LODs[index];
 }
 
@@ -189,6 +195,15 @@ Transform::Transform(Vector3 Position)
 	this->position = Position;
 	this->rotation = Vector3(0, 0, 0);
 	this->scale = Vector3(1, 1, 1);
+	RecalculateMatrix();
+}
+
+Transform::Transform(Transform* transform)
+{
+	this->gameObject = transform->gameObject;
+	this->position = transform->position;
+	this->rotation = transform->rotation;
+	this->scale = transform->scale;
 	RecalculateMatrix();
 }
 

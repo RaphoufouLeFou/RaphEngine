@@ -55,7 +55,6 @@ void MainLoop() {
 			Close();
 			break;
 		}
-		//if()
 		Time::deltaTime = (Time::GetTime() - start) / 1000.0;
 	}
 }
@@ -64,6 +63,7 @@ void RaphEngine::Init(const char* windowTitle, std::string font_name) {
 	RaphEngine::windowTitle = windowTitle;
 	SDL_Init(SDL_INIT_EVERYTHING);
 	Renderer::Init(false, font_name);
+	Shader::Prepare();
 }
 
 void RaphEngine::Run() {

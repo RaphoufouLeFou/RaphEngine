@@ -25,8 +25,8 @@ public:
 class RaphEngine
 {
 public:
-	static void PassShaderVector3(char* name, Vector3 value);
-	static void SetSkyBox(std::vector<std::string> skyboxTextures);
+	static RAPHENGINE_API void PassShaderVector3(char* name, Vector3 value);
+	static RAPHENGINE_API void SetSkyBox(std::vector<std::string> skyboxTextures);
 	static RAPHENGINE_API GameObject *Player;
 	static RAPHENGINE_API void Init(const char* windowTitle, std::string font_name);
 	static RAPHENGINE_API void Run();

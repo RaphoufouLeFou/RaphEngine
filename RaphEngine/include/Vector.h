@@ -18,7 +18,7 @@ typedef glm::mat3 Matrix3;
 typedef glm::mat4 Matrix4;
 
 
-Matrix4 GetRotationMatrix(Vector3 rotation);
+Matrix4 RAPHENGINE_API GetRotationMatrix(Vector3 rotation);
 
 
 

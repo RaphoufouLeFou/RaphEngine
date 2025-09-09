@@ -164,3 +164,28 @@ void Shader::checkCompileErrors(GLuint shader, std::string type)
         }
     }
 }
+
+char* ModelsNameIndexed[128];
+
+void Shader::Prepare()
+{
+    for (int i = 0; i < 128; i++)
+    {
+        std::string name = "ModelOffsets[" + std::to_string(i) + "]";
+        ModelsNameIndexed[i] = (char *) malloc(name.length() + 1);
+        if (ModelsNameIndexed[i] == nullptr)
+		{
+			std::cerr << "Failed to allocate memory for ModelsNameIndexed[" << i << "]" << std::endl;
+			continue;
+		}
+        strcpy(ModelsNameIndexed[i], name.c_str());
+    }
+}
+
+void Shader::setModel(const Matrix4& mat, int index) const
+{
+    if(index < 0 || index >= 128)
+        std::cerr << "Index out of bounds: " << index << ". Must be between 0 and 127." << std::endl;
+    else
+        setMat4(ModelsNameIndexed[index], mat);
+}

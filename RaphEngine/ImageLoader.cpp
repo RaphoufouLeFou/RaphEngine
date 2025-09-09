@@ -76,6 +76,7 @@ GLuint ImageLoader::LoadImageGL(const char* path, bool smooth) {
 
 		// "Bind" the newly created texture : all future texture functions will modify this texture
 		glBindTexture(GL_TEXTURE_2D, textureID);
+		printf("Loaded image: %s with id = %d\n", path, textureID);
 
 		// Give the image to OpenGL
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RGBAsurface->w, RGBAsurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, RGBAsurface->pixels);

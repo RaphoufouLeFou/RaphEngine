@@ -57,7 +57,7 @@ std::vector<glm::mat4> lightMatricesCache;
 int debugLayer = 0;
 bool showQuad = false;
 
-glm::vec3 lightDirGlobal = glm::normalize(glm::vec3(-2.5f, -2.5f, -2.0f));
+glm::vec3 lightDirGlobal = glm::normalize(glm::vec3(-0, -0, -1));
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -66,6 +66,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	*Renderer::ResX = width;
 	*Renderer::ResY = height;
 	Text::InitTextRendering(fontName);
+	UIElement::RecalculateTransforms();
 }
 
 void SetHints() {
@@ -109,7 +110,7 @@ void CalculateMat() {
 
 }
 
-const int factor = 4 ;
+const int factor = 1 ;
 unsigned int SHADOW_WIDTH = 1024 * factor, SHADOW_HEIGHT = 1024 * factor;
 unsigned int depthMapFBO;
 // create depth texture
@@ -289,7 +290,7 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 	Image::InitImageRendering();
 	glfwSwapInterval(0);
 
-	TextUI* infos = new TextUI("alpha dev build : vA0.001.2", Vector3(0, 0, 0), Vector3(2, *ResY - 2, 0));
+	TextUI* infos = new TextUI("alpha dev build : vA0.002.2", Vector3(0, 0, 0), Vector3(2, 2, 0), UISnapPoint::BOTTOM_LEFT);
 	infos->transform->SetScale(Vector3(0.4, 0.4, 0.4));
 /*
 	shader = new Shader(Map_VS_shader, Map_FS_shader);
@@ -326,6 +327,11 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 	shader->setFloat("heightScale", 0.1f);
 	debugDepthQuad->use();
 	debugDepthQuad->setInt("depthMap", 0);
+
+	//UIElement::DrawAllUI();
+
+
+	glfwSwapBuffers(window);
 }
 
 double Time::GetTime() {
@@ -379,93 +385,33 @@ Shader* ImageShader;
 
 void Image::InitImageRendering() {
 	ImageShader = new Shader(imagesVS_shader, imagesFS_shader);
+	glm::mat4 projection = glm::ortho(0.0f, (float)(*Renderer::ResX), 0.0f, (float)(*Renderer::ResY));
+	ImageShader->use();
+	ImageShader->setMat4("projection", projection);
+	ImageShader->setInt("TextureSampler", 0);
 }
 
-void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) {
-
-	float relativeX = (((float)x / (float)*Renderer::ResX) * 2 - 1);
-	float relativeY = -(((float)y / (float)*Renderer::ResY) * 2 - 1);
-	float relativeSizeX = (float)sizeX / (float)(*Renderer::ResX * 2);
-	float relativeSizeY = -(float)sizeY / (float)(*Renderer::ResY * 2);
-
-	float vertices[] = {
-		relativeX                , relativeY + relativeSizeY, (float)zIndex, 01, // left
-		relativeX                , relativeY                , (float)zIndex, 00, // right
-		relativeX + relativeSizeX, relativeY                , (float)zIndex, 10, // top
-
-		relativeX                , relativeY + relativeSizeY, (float)zIndex, 01, // left
-		relativeX + relativeSizeX, relativeY                , (float)zIndex, 10, // top
-		relativeX + relativeSizeX, relativeY + relativeSizeY, (float)zIndex, 11  // right
-	};
-
-	static std::map<std::string, GLuint> Textures;
-
-	ImageShader->use();
-
-	if (Textures.find(path) == Textures.end()) {
-		GLuint Texture = ImageLoader::LoadImageGL(path.c_str(), false);
-
-		Textures.insert(std::pair<std::string, GLuint>(path, Texture));
-	}
-
-	GLuint Texture = Textures[path];
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, Texture);
-	ImageShader->setInt("TextureSampler", 0);
-
-	unsigned int VBO, VAO;
-
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(0);
-
-	glBindVertexArray(VAO);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, int zIndex) 
+{
+	GLuint Texture = ImageLoader::LoadImageGL(path.c_str(), false);
+	RenderImage(Texture, x, y, sizeX, sizeY, zIndex);
 }
 
 void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int zIndex) {
-
-	float relativeX = (((float)x / (float)*Renderer::ResX) * 2 - 1);
-	float relativeY = -(((float)y / (float)*Renderer::ResY) * 2 - 1);
-	float relativeSizeX = (float)sizeX / (float)(*Renderer::ResX * 2);
-	float relativeSizeY = -(float)sizeY / (float)(*Renderer::ResY * 2);
-
 	float vertices[] = {
-		relativeX                , relativeY + relativeSizeY, (float)zIndex, 01, // left
-		relativeX                , relativeY                , (float)zIndex, 00, // right
-		relativeX + relativeSizeX, relativeY                , (float)zIndex, 10, // top
+		x		 , y + sizeY, (float)zIndex, 00, // left
+		x		 , y		, (float)zIndex, 01, // right
+		x + sizeX, y		, (float)zIndex, 11, // top
 
-		relativeX                , relativeY + relativeSizeY, (float)zIndex, 01, // left
-		relativeX + relativeSizeX, relativeY                , (float)zIndex, 10, // top
-		relativeX + relativeSizeX, relativeY + relativeSizeY, (float)zIndex, 11  // right
+		x		 , y + sizeY, (float)zIndex, 00, // left
+		x + sizeX, y		, (float)zIndex, 11, // top
+		x + sizeX, y + sizeY, (float)zIndex, 10  // right
 	};
-	/*
-	printf("ResX : %d\nResY : %d\n", *Renderer::ResX, *Renderer::ResY);
-
-	for (int i = 0; i < 24; i+=4)
-	{
-		printf("%f, %f, %f, %f\n", vertices[i], vertices[i + 1], vertices[i + 2], vertices[i + 3]);
-	}*/
 
 	ImageShader->use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	ImageShader->setInt("TextureSampler", 0);
-
+	
 	unsigned int VBO, VAO;
 
 	glGenVertexArrays(1, &VAO);
@@ -758,6 +704,27 @@ void CleanUpShaders()
 	ShaderIDs.clear();
 }
 
+std::string Mat4ToStringRender(glm::mat4 mat)
+{
+	std::string str;
+	str += "mat4(";
+	for (int i = 0; i < 4; ++i)
+	{
+		str += "\n\t";
+		for (int j = 0; j < 4; ++j)
+		{
+			str += std::to_string(mat[i][j]);
+			if (j != 3)
+			{
+				str += ", ";
+			}
+		}
+		str += "\n";
+	}
+	str += ")";
+	return str;
+}
+
 void RenderGameObject(Matrix4 ObjectModel, Mesh * mesh, Shader* shaderUse, int InstancesCount) {
 	// int err = 0;
 
@@ -773,7 +740,9 @@ void RenderGameObject(Matrix4 ObjectModel, Mesh * mesh, Shader* shaderUse, int I
 		//shaderUse->setInt(mesh->textures[i].type.c_str(), i);
 		glBindTexture(GL_TEXTURE_2D, mesh->textures[i].id);
 	}
-	shaderUse->setMat4("model", ObjectModel * mesh->ModelMatrix);
+	//printf("Renderer model matix:\n%s\n", Mat4ToStringRender(ObjectModel).c_str());
+	shaderUse->setMat4("model", ObjectModel /* * mesh->ModelMatrix*/);
+	//shaderUse->setMat4("model", mesh->ModelMatrix);
 	shaderUse->setBool("HaveTexture", HaveTexture);
 	shaderUse->setBool("HaveNormalMap", mesh->haveNormalMap);
 	shaderUse->setBool("HaveSpecularMap", mesh->haveSpecularMap);
@@ -791,7 +760,6 @@ void RenderGameObject(Matrix4 ObjectModel, Mesh * mesh, Shader* shaderUse, int I
 	//glActiveTexture(GL_TEXTURE0);
 
 }
-
 void RenderGameObjectShadow(Mesh* mesh, int InstancesCount) {
 	if (mesh->vertices.size() == 0)
 		return;
@@ -815,7 +783,6 @@ void RenderObjects() {
 	for (GameObject* go : GameObject::SpawnedGameObjects) {
 		if (go->activeSelf)
 		{
-
 			Shader* RenderObjectShader = go->ObjectShader;
 			if(RenderObjectShader == nullptr)
 				continue;
@@ -828,9 +795,12 @@ void RenderObjects() {
 				InstanciedGameObject* InstanceGo = dynamic_cast<InstanciedGameObject*> (go);
 				for (int i = 0; i < InstanceGo->instancesCount; i++)
 				{
+					/*
 					std::string name = "ModelOffsets[" + std::to_string(i) + "]";
 					//printf("setting this %dth shit to the correct fucking matrix\n");
 					RenderObjectShader->setMat4(name.c_str(), InstanceGo->InstancesTransforms[i]->ModelMatrix);
+					*/
+					RenderObjectShader->setModel(InstanceGo->InstancesTransforms[i]->ModelMatrix, i);
 				}
 				InstancesCount = InstanceGo->instancesCount;
 			}
@@ -979,8 +949,11 @@ void RenderObjectsShadows(Shader* sh, Shader* instanciedSh) {
 				InstanciedGameObject* InstanceGo = dynamic_cast<InstanciedGameObject*> (go);
 				for (int i = 0; i < InstanceGo->instancesCount; i++)
 				{
+					/*
 					std::string name = "ModelOffsets[" + std::to_string(i) + "]";
 					sh->setMat4(name.c_str(), InstanceGo->InstancesTransforms[i]->ModelMatrix);
+					*/
+					sh->setModel(InstanceGo->InstancesTransforms[i]->ModelMatrix, i);
 				}
 				InstancesCount = InstanceGo->instancesCount;
 				
@@ -1289,8 +1262,7 @@ void Renderer::StartFrameRender() {
 		glDisable(GL_BLEND);
 	}
 
-
-	Image::RenderImage(depthMap, 0, 0, 1000, 1000, 10);
+	//Image::RenderImage("Assets/Textures/IMG_04291.jpg", 0, 0, 1000, 1000, 1);
 
 
 	float range = 50.0f;
@@ -1303,7 +1275,7 @@ void Renderer::StartFrameRender() {
 	debugDepthQuad->setInt("layer", debugLayer);
 	glActiveTexture(GL_TEXTURE0);
 
-	//GLuint Texture = ImageLoader::LoadImageGL("Assets/Textures/Logo.bmp", false);
+	
 	//glBindTexture(GL_TEXTURE_2D, Texture);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, depthMap);
 
@@ -1324,7 +1296,6 @@ bool Renderer::RenderFrame() {
 
 	// text rendering
 	UIElement::DrawAllUI();
-	
 
 	glfwSwapBuffers(window);
 

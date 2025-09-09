@@ -22,12 +22,12 @@ typedef struct ImageData
     int channels;
 } ImageData;
 
-unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma);
+RAPHENGINE_API unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma);
 
 
 class RAPHENGINE_API Model {
 public:
-    static ImageData * LoadImage(const char* path);
+    static ImageData* MeshLoadImage(const char* path);
     static std::vector<Texture> textures_loaded;
     std::vector<Mesh>    meshes;
     std::string directory;

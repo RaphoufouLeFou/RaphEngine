@@ -67,7 +67,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 }
 
 
-ImageData* Model::LoadImage(const char* path)
+ImageData* Model::MeshLoadImage(const char* path)
 {
 	int width, height, nrComponents;
 	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
@@ -255,10 +255,19 @@ void Model::processNode(aiNode* node, const aiScene* scene, bool filter)
 		// the node object only contains indices to index the actual objects in the scene. 
 		// the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+
+		aiMatrix4x4 globalTransform = node->mTransformation;
+		aiNode* parent = node->mParent;
+
+		while (parent != nullptr) {
+			globalTransform = parent->mTransformation * globalTransform;
+			parent = parent->mParent;
+		}
+
 		glm::mat4 model = glm::mat4(1.0f);
 		for (int i = 0; i < 4; i++)
 			for (int j = 0; j < 4; j++)
-				model[i][j] = node->mTransformation[i][j];
+				model[i][j] = globalTransform[i][j];
 		meshes.push_back(processMesh(mesh, scene, filter, model));
 	}
 	// after we've processed all of the meshes (if any) we then recursively process each of the children nodes

@@ -29,28 +29,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -78,6 +78,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -95,6 +96,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -113,6 +115,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;D:\DOCUMENTS\GitHub\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,6 +146,7 @@ python shaderUtils.py</Command>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>F:\Documents\Libraries\steam;F:\Documents\Libraries\SDL2\include;F:\Documents\Libraries\glad\include;F:\Documents\Libraries\freetype-2.13.2\include;F:\Documents\Libraries\glew-2.1.0\include;F:\Documents\Libraries\glm;F:\Documents\Libraries\glfw-3.3.9.bin.WIN64\include;D:\DOCUMENTS\GitHub\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,6 +165,7 @@ python shaderUtils.py</Command>
     <ClInclude Include="F:\downloads\stb_image.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\GameObject.h" />
+    <ClInclude Include="include\Guizmo.h" />
     <ClInclude Include="include\ImageLoader.h" />
     <ClInclude Include="include\Images.h" />
     <ClInclude Include="include\Inputs.h" />
@@ -168,6 +173,7 @@ python shaderUtils.py</Command>
     <ClInclude Include="include\RaphEngine.h" />
     <ClInclude Include="include\RayCast.h" />
     <ClInclude Include="include\Renderer.h" />
+    <ClInclude Include="include\Settings.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\shaders.h" />
     <ClInclude Include="include\Text.h" />
@@ -178,6 +184,7 @@ python shaderUtils.py</Command>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="Guizmo.cpp" />
     <ClCompile Include="ImageLoader.cpp" />
     <ClCompile Include="Inputs.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
@@ -190,6 +197,7 @@ python shaderUtils.py</Command>
     <ClCompile Include="RaphEngine.cpp" />
     <ClCompile Include="RayCast.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="shaders.cpp" />
     <ClCompile Include="stb_image.cpp" />

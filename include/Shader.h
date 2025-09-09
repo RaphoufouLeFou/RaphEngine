@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef _WIN32
-#include <gl/glew.h>
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <GL/GL.h>
 #include <glm.hpp>
@@ -20,11 +20,12 @@
 #include <sstream>
 #include <iostream>
 
-class Shader
+class RAPHENGINE_API Shader
 {
 public:
     unsigned int ID;
     Shader(const char* vShaderCode, const char* fShaderCode, const char* gShaderCode = nullptr);
+    static void Prepare();
     void use();
     void setBool(const char* name, bool value) const;
     void setInt(const char* name, int value) const;
@@ -42,6 +43,7 @@ public:
     void setMat2(const char* name, const Matrix2& mat) const;
     void setMat3(const char* name, const Matrix3& mat) const;
     void setMat4(const char* name, const Matrix4& mat) const;
+    void setModel(const Matrix4& mat, int index) const;
     static std::vector<Shader*> LoadedShaders;
 
 private:
