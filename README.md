@@ -10,6 +10,8 @@ TODO
 - RayCasting
 - UI text, immage and buttons
 - custom shaders
+- Multi platforms (Linux + Windows)
+- easy to use
 
 ## Screenshots
 
