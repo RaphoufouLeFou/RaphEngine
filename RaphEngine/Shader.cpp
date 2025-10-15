@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "include/Shader.h"
+#include <cstring>
 
 #ifdef _WIN32
 #include <gl/glew.h>
