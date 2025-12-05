@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -Wall -Wextra -O3 -std=c++23 -Iinclude -I/usr/include/freetype2 -I. `sdl2-config --cflags` -DRAPHENGINE_EXPORTS -fPIC # -fsanitize=address -g
+CXXFLAGS := -Wall -Wextra -O3 -std=c++23 -Iinclude -I/usr/include/freetype2 -I. `sdl2-config --cflags` -DRAPHENGINE_EXPORTS -fPIC -fsanitize=address -g
 LDFLAGS :=
 
 

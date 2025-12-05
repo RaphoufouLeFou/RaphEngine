@@ -147,6 +147,7 @@ public :
 	static double GetMouseScroll();
 	static void SetMousePosition(double x, double y);
     static void SetMouseVisibility(bool visible);
-
+    static bool IsMouseOnScreen();
+    static bool IsWindowFocused();
 };
 

@@ -22,7 +22,6 @@
 class Transform;
 class Mesh;
 
-
 class RAPHENGINE_API GameObject {
 public:
 	Transform* transform;
@@ -42,11 +41,13 @@ public:
 	bool activeSelf;
 	int layer;
 	GameObject();
-	~GameObject();
+	virtual ~GameObject() = default;
 	void InitGO();
 	std::vector<Mesh>* GetLODMesh(Vector3 cameraPos, float maxDist);
+    virtual void Awake() {}
 	virtual void Start() {}
 	virtual void Update() {}
+    virtual void OnExit() {}
 
 	static std::vector<GameObject*> SpawnedGameObjects;
 };
@@ -121,7 +122,7 @@ public:
 
 	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures, bool autoNormal = false)
 	{
-		printf("Loading mesh with %d vertices and %d indices\n", vertices.size(), indices.size());
+		printf("Loading mesh with %ld vertices and %ld indices\n", vertices.size(), indices.size());
 		this->MeshShader = nullptr;
 		this->vertices = vertices;
 		this->indices = indices;

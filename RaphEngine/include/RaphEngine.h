@@ -13,6 +13,7 @@
 #include "Guizmo.h"
 #include "Shader.h"
 #include "Settings.h"
+#include "JSON.h"
 
 typedef char byte;
 

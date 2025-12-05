@@ -1,8 +1,11 @@
 #pragma once
 
-#include "RaphEngine.h"
+#include "Vector.h"
+#include "GameObject.h"
 #include <functional>
 #include <map>
+#include <string>
+#include <vector>
 
 enum class UISnapPoint
 {
@@ -16,6 +19,7 @@ enum class UISnapPoint
 class RAPHENGINE_API UIElement
 {
 public:
+    std::string name;
 	virtual void DrawUI() {}
 	static void RecalculateTransforms();
 	Transform* transform;
@@ -36,7 +40,14 @@ public:
 	std::string text;
 	Vector3 color;
 	void DrawUI();
-	TextUI(std::string text = "", Vector3 color = Vector3(0,0,0), Vector3 position = Vector3(0, 0, 0), UISnapPoint SnapPoint = UISnapPoint::TOP_LEFT);
+	TextUI(
+        std::string name = "",
+        std::string text = "",
+        Vector3 color = Vector3(0,0,0),
+        Vector3 position = Vector3(0, 0, 0),
+        float fontSize = 32.0f,
+        UISnapPoint SnapPoint = UISnapPoint::TOP_LEFT
+    );
 };
 
 class RAPHENGINE_API ImageUI : public UIElement
@@ -44,7 +55,13 @@ class RAPHENGINE_API ImageUI : public UIElement
 public:
 	std::string texture;
 	void DrawUI();
-	ImageUI(std::string texture = "", Vector3 position = Vector3(0, 0, 0), UISnapPoint SnapPoint = UISnapPoint::TOP_LEFT);
+	ImageUI(
+        std::string name = "",
+        std::string texture = "",
+        Vector3 position = Vector3(0, 0, 0),
+        Vector3 scale = Vector3(100, 100, 1),
+        UISnapPoint SnapPoint = UISnapPoint::TOP_LEFT
+    );
 };
 
 class RAPHENGINE_API ButtonUI : public UIElement

@@ -31,3 +31,17 @@ void Inputs::SetMouseVisibility(bool visible)
 	else
 		glfwSetInputMode(Renderer::GetWindow(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
+
+bool Inputs::IsMouseOnScreen()
+{
+    double x, y;
+    glfwGetCursorPos(Renderer::GetWindow(), &x, &y);
+    int* resX = Renderer::ResX;
+    int* resY = Renderer::ResY;
+    return (x >= 0 && x <= *resX && y >= 0 && y <= *resY);
+}
+
+bool Inputs::IsWindowFocused()
+{
+    return glfwGetWindowAttrib(Renderer::GetWindow(), GLFW_FOCUSED);
+}

@@ -28,7 +28,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory, boo
 
 	if (data)
 	{
-		GLenum format;
+		GLenum format = GL_RGBA;
 		if (nrComponents == 1)
 			format = GL_RED;
 		else if (nrComponents == 3)
@@ -167,12 +167,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::ma
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		Vertex vertex;
-		Vector3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
 		// positions
 		vertex.Position.x = mesh->mVertices[i].x;
 		vertex.Position.y = mesh->mVertices[i].y;
 		vertex.Position.z = mesh->mVertices[i].z;
-		int k = 0;
 		// normals
 		if (mesh->HasNormals())
 		{
@@ -183,7 +181,6 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::ma
 		// texture coordinates
 		if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
 		{
-			Vector2 vec;
 			// a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
 			// use models where a vertex can have multiple texture coordinates so we always take the first set (0).
 			vertex.TexCoords.x = mesh->mTextureCoords[0][i].x;
@@ -234,7 +231,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, bool filter, glm::ma
 
 	Mesh mesh1(vertices, indices, textures);
 	mesh1.ModelMatrix = ModelMat;
-	printf("Generated model matix:\n%s\n", Mat4ToString(ModelMat).c_str());
+	// printf("Generated model matix:\n%s\n", Mat4ToString(ModelMat).c_str());
 	mesh1.haveNormalMap = normalMaps.size() > 0;
 	mesh1.haveSpecularMap = specularMaps.size() > 0;
 	mesh1.haveHeightMap = heightMaps.size() > 0;
@@ -369,12 +366,12 @@ bool loadOBJVerts(
 		}
 
 	}
-	int size = vertexIndices.size();
+	size_t size = vertexIndices.size();
 	*out_vertices = new Vector3[size];
 	*out_uvs = new Vector2[size];
 	*out_normals = new Vector3[size];
 	// For each vertex of each triangle
-	for (unsigned int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 
 		// Get the indices of its attributes
 		unsigned int vertexIndex = vertexIndices[i];

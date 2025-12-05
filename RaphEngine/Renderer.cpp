@@ -54,7 +54,7 @@ std::vector<float> shadowCascadeLevels{ 500.0f, 100.0f, 30.0f, 4.0f };
 
 std::vector<glm::mat4> lightMatricesCache;
 
-int debugLayer = 0;
+size_t debugLayer = 0;
 bool showQuad = false;
 
 glm::vec3 lightDirGlobal = glm::normalize(glm::vec3(-0, -0, -1));
@@ -73,8 +73,8 @@ void SetHints() {
 	glfwWindowHint(GLFW_SAMPLES, 8); // 8x antialiasing
 	glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE); // Maximizing window
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); // We want OpenGL 4.1
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 4.1
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
@@ -241,7 +241,11 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 	window = glfwCreateWindow(*ResX, *ResY, RaphEngine::windowTitle, fullScreen ? monitor : NULL, NULL);
 
 	if (!window) {
-		std::cerr << "Failed to create window" << std::endl;
+		std::cerr << "Failed to create window (skill issue)" << std::endl;
+        // display the error message
+        const char* description;
+        int code = glfwGetError(&description);
+        std::cerr << "Error code: " << code << ", description: " << description << std::endl;
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}
@@ -258,8 +262,6 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 		exit(EXIT_FAILURE);
 		return;
 	}
-
-
 
 	// Ensure we can capture the escape key being pressed below
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -290,8 +292,8 @@ void Renderer::Init(bool fullScreen, std::string font_name) {
 	Image::InitImageRendering();
 	glfwSwapInterval(0);
 
-	TextUI* infos = new TextUI("alpha dev build : vA0.002.2", Vector3(0, 0, 0), Vector3(2, 2, 0), UISnapPoint::BOTTOM_LEFT);
-	infos->transform->SetScale(Vector3(0.4, 0.4, 0.4));
+	TextUI* infos = new TextUI("", "alpha dev build : vA0.002.2", Vector3(0, 0, 0), Vector3(2, 2, 0), 0.4f, UISnapPoint::BOTTOM_LEFT);
+	// infos->transform->SetScale(Vector3(0.4, 0.4, 0.4));
 /*
 	shader = new Shader(Map_VS_shader, Map_FS_shader);
 	simpleDepthShader = new Shader(shadow_mapping_depthVS_shader, shadow_mapping_depthFS_shader);
@@ -399,17 +401,20 @@ void Image::RenderImage(std::string path, int x, int y, int sizeX, int sizeY, in
 
 void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int zIndex) {
 	float vertices[] = {
-		x		 , y + sizeY, (float)zIndex, 00, // left
-		x		 , y		, (float)zIndex, 01, // right
-		x + sizeX, y		, (float)zIndex, 11, // top
+		(float)x                , (float)y + (float)sizeY   , (float)zIndex, 00, // left
+		(float)x                , (float)y                  , (float)zIndex, 01, // right
+		(float)x + (float)sizeX , (float)y		            , (float)zIndex, 11, // top
 
-		x		 , y + sizeY, (float)zIndex, 00, // left
-		x + sizeX, y		, (float)zIndex, 11, // top
-		x + sizeX, y + sizeY, (float)zIndex, 10  // right
+		(float)x		        , (float)y + (float)sizeY   , (float)zIndex, 00, // left
+		(float)x + (float)sizeX , (float)y		            , (float)zIndex, 11, // top
+		(float)x + (float)sizeX , (float)y + (float)sizeY   , (float)zIndex, 10  // right
 	};
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	ImageShader->use();
 	glActiveTexture(GL_TEXTURE0);
+    glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	
 	unsigned int VBO, VAO;
@@ -430,7 +435,8 @@ void Image::RenderImage(GLuint texture, int x, int y, int sizeX, int sizeY, int 
 
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 
@@ -647,7 +653,7 @@ GLFWwindow* Renderer::GetWindow() {
 char * Name = nullptr;
 Vector3 Value = Vector3(0, 0, 0);
 
-std::vector<int> ShaderIDs;
+std::vector<unsigned int> ShaderIDs;
 void SetupShader(Shader * sh)
 {
 
@@ -1084,7 +1090,7 @@ void drawCascadeVolumeVisualizers(const std::vector<glm::mat4>& lightMatrices, S
         {0.0, 0.0, 1.0, 0.5f},
     };
 
-    for (int i = 0; i < lightMatrices.size(); ++i)
+    for (size_t i = 0; i < lightMatrices.size(); ++i)
     {
         const auto corners = getFrustumCornersWorldSpace(lightMatrices[i]);
         std::vector<glm::vec3> vec3s;
@@ -1265,8 +1271,8 @@ void Renderer::StartFrameRender() {
 	//Image::RenderImage("Assets/Textures/IMG_04291.jpg", 0, 0, 1000, 1000, 1);
 
 
-	float range = 50.0f;
-	//float near_plane = .1f, far_plane = range * 2.0f;
+	// float range = 50.0f;
+	// float near_plane = .1f, far_plane = range * 2.0f;
 
 	
 	debugDepthQuad->use();

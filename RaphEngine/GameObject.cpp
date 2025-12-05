@@ -25,11 +25,12 @@ GameObject::GameObject() {
 	
 	name = "new GameObject";
 }
-
+/*
 GameObject::~GameObject() {
 	delete transform;
+    delete ObjectShader;
 }
-
+*/
 InstanciedGameObject::InstanciedGameObject() 
 {
 	instancesCount = 0;

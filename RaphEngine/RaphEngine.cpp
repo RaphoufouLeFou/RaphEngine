@@ -27,8 +27,13 @@ void ExecuteStarts() {
 	{
 		GameObject* go = GameObject::SpawnedGameObjects[i];
 		go->InitGO();
-		go->Start();
+		go->Awake();
 	}
+    for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
+    {
+        GameObject* go = GameObject::SpawnedGameObjects[i];
+        go->Start();
+    }
 }
 
 void ExecuteUpdates() {
@@ -37,9 +42,21 @@ void ExecuteUpdates() {
 }
 
 void Close() {
+    for (size_t i = 0; i < GameObject::SpawnedGameObjects.size(); i++)
+    {
+        GameObject::SpawnedGameObjects[i]->OnExit();
+        delete GameObject::SpawnedGameObjects[i];
+    }
+/*
+    for (size_t i = 0; i < UIElement::Elements.size(); i++)
+        delete UIElement::Elements[i];
+    for (size_t i = 0; i < ButtonUI::Buttons.size(); i++)
+        delete ButtonUI::Buttons[i];
+    for (size_t i = 0; i < Shader::LoadedShaders.size(); i++)
+        delete Shader::LoadedShaders[i];
+        */
 	SDL_Quit();
 }
-
 
 void MainLoop() {
 	// Main loop
@@ -79,4 +96,3 @@ void RaphEngine::GetWindowSize(int* x, int* y) {
 void RaphEngine::UpdateLogo(const char* newLogoPath) {
 	Renderer::UpdateLogoGL(newLogoPath);
 }
-

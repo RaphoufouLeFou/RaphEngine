@@ -18,13 +18,18 @@ void TextUI::DrawUI()
 	Text::RenderText(this->text.c_str(), position.x, position.y, this->transform->GetScale().y, this->color);
 }
 
-TextUI::TextUI(std::string text, Vector3 color, Vector3 position, UISnapPoint SnapPoint)
+TextUI::TextUI(std::string name, std::string text, Vector3 color, Vector3 position, float fontSize, UISnapPoint SnapPoint)
 {
 	UIElement::Elements.push_back(this);
+    if(!name.empty())
+		this->name = name;
+    else
+		this->name = "TextUI_" + std::to_string(UIElement::Elements.size());
 	this->text = text;
 	this->color = color;
 	this->transform = new Transform();
 	this->transform->SetPosition(position);
+    this->transform->SetScale(Vector3(1, fontSize, 1));
 	this->SnapPoint = SnapPoint;
 	CalculateSnapedPosition();
 }
@@ -35,16 +40,22 @@ void ImageUI::DrawUI()
 	{
 		return;
 	}
+    CalculateSnapedPosition();
 	Vector3 position = this->transform->GetPosition();
 	Vector3 scale = this->transform->GetScale();
 	Image::RenderImage(this->texture, position.x, position.y, scale.x, scale.y, position.z);
 }
 
-ImageUI::ImageUI(std::string texture, Vector3 position, UISnapPoint SnapPoint)
+ImageUI::ImageUI(std::string name, std::string texture, Vector3 position, Vector3 scale, UISnapPoint SnapPoint)
 {
+    if(!name.empty())
+		this->name = name;
+    else
+		this->name = "ImageUI_" + std::to_string(UIElement::Elements.size());
 	this->texture = texture;
 	this->transform = new Transform();
 	this->transform->SetPosition(position);
+	this->transform->SetScale(scale);
 	this->SnapPoint = SnapPoint;
 	UIElement::Elements.push_back(this);
 	CalculateSnapedPosition();
@@ -101,12 +112,20 @@ void ButtonUI::SetOnClick(std::function<void()> onClick)
 
 void UIElement::DrawAllUI()
 {
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	int length = UIElement::Elements.size();
 	for (int i = 0; i < length; i++)
 	{
 		UIElement* element = UIElement::Elements[i];
 		element->DrawUI();
 	}
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_LIGHTING);
 }
 
 void UIElement::CalculateSnapedPosition()
